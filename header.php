@@ -179,17 +179,17 @@
                 <div class="multi-level collapse" role="list" id="submenu-assets" aria-expanded="false">
                     <ul class="flex-column nav">
                         <li class="nav-item">
-                            <a class="nav-link" href="http://localhost:8888/asset_one/index.php/all-assets/">
+                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/all-assets/">
                                 <span class="sidebar-text">View All</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="http://localhost:8888/asset_one/index.php/add-new-asset/">
+                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/add-new-asset/">
                                 <span class="sidebar-text">Add New Asset</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="http://localhost:8888/asset_one/index.php/categories/">
+                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/categories/">
                                 <span class="sidebar-text">Categories</span>
                             </a>
                         </li>
