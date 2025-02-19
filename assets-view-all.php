@@ -7,7 +7,7 @@ get_header();
 global $wpdb;
 
 // Number of records per page
-$records_per_page = 5;
+$records_per_page = 20;
 
 // Get current page number
 $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;

@@ -1,4 +1,74 @@
 <?php
+// Add theme supports
+add_action('after_setup_theme', function() {
+    add_theme_support('title-tag');
+    add_theme_support('custom-logo');
+    add_theme_support('post-thumbnails');
+    
+    // Register navigation menus
+    register_nav_menus(array(
+        'dashboard-menu' => __('Dashboard Menu', 'volt'),
+        'dashboard-top' => __('Dashboard Top Menu', 'volt')
+    ));
+});
+
+// Custom walker class for dashboard menu
+class Dashboard_Menu_Walker extends Walker_Nav_Menu {
+    public function start_lvl(&$output, $depth = 0, $args = array()) {
+        $output .= '<div class="multi-level collapse"><ul class="flex-column nav">';
+    }
+
+    public function end_lvl(&$output, $depth = 0, $args = array()) {
+        $output .= '</ul></div>';
+    }
+
+    public function start_el(&$output, $item, $depth = 0, $args = array(), $id = 0) {
+        $classes = empty($item->classes) ? array() : (array) $item->classes;
+        $classes[] = 'nav-item';
+        
+        $class_names = join(' ', apply_filters('nav_menu_css_class', array_filter($classes), $item, $args, $depth));
+        $class_names = $class_names ? ' class="' . esc_attr($class_names) . '"' : '';
+
+        $output .= '<li' . $class_names . '>';
+
+        $atts = array();
+        $atts['title']  = !empty($item->attr_title) ? $item->attr_title : '';
+        $atts['target'] = !empty($item->target) ? $item->target : '';
+        $atts['rel']    = !empty($item->xfn) ? $item->xfn : '';
+        $atts['href']   = !empty($item->url) ? $item->url : '';
+        $atts['class']  = 'nav-link d-flex align-items-center';
+
+        $atts = apply_filters('nav_menu_link_attributes', $atts, $item, $args, $depth);
+
+        $attributes = '';
+        foreach ($atts as $attr => $value) {
+            if (!empty($value)) {
+                $value = ('href' === $attr) ? esc_url($value) : esc_attr($value);
+                $attributes .= ' ' . $attr . '="' . $value . '"';
+            }
+        }
+
+        $item_output = $args->before;
+        $item_output .= '<a' . $attributes . '>';
+        $item_output .= '<span class="sidebar-icon"><i class="' . ($item->menu_order ? 'fas fa-' . $item->menu_order : 'fas fa-home') . '"></i></span>';
+        $item_output .= '<span class="sidebar-text">' . $args->link_before . apply_filters('the_title', $item->title, $item->ID) . $args->link_after . '</span>';
+        $item_output .= '</a>';
+        $item_output .= $args->after;
+
+        $output .= apply_filters('walker_nav_menu_start_el', $item_output, $item, $depth, $args);
+    }
+}
+
+// Enqueue scripts and styles
+function theme_enqueue_scripts() {
+    wp_enqueue_style('volt-css', get_template_directory_uri() . '/assets/css/volt.css');
+    wp_enqueue_script('bootstrap-js', get_template_directory_uri() . '/vendor/bootstrap/dist/js/bootstrap.min.js', array('jquery'), null, true);
+    wp_enqueue_script('popper-js', get_template_directory_uri() . '/vendor/@popperjs/core/dist/umd/popper.min.js', array(), null, true);
+    wp_enqueue_script('simplebar-js', get_template_directory_uri() . '/vendor/simplebar/dist/simplebar.min.js', array(), null, true);
+    wp_enqueue_script('volt-js', get_template_directory_uri() . '/assets/js/volt.js', array('jquery'), null, true);
+}
+add_action('wp_enqueue_scripts', 'theme_enqueue_scripts');
+
 add_filter('template_include', function($template) {
     error_log('Template file used: ' . $template);
     return $template;

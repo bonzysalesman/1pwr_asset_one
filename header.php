@@ -56,6 +56,12 @@
 <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
 <script src="https://cdn.datatables.net/plug-ins/2.1.8/dataRender/hyperLink.js" type="text/javascript"></script>
 
+<!-- Awesomeplete -->
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+</head>
+
 <!-- NOTICE: You can use the _analytics.html partial to include production code specific code & trackers -->
 
 <style type="text/css">
@@ -142,14 +148,14 @@
 
         <ul class="nav flex-column pt-3 pt-md-0">
             <li class="nav-item">
-                <a href="../../index.html" class="nav-link d-flex align-items-center">
+                <a href="<?php bloginfo('url'); ?>" class="nav-link d-flex align-items-center">
                     <span class="sidebar-icon">
                         <img src="<?php bloginfo('template_url'); ?>/assets/img/brand/1pwr_logo.png" style="margin-top: -5px; width: 80%;" alt="1PWR Logo">
                     </span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="../pages/dashboard/dashboard.html" class="nav-link">
+                <a href="<?php bloginfo('url'); ?>" class="nav-link">
                     <span class="sidebar-icon">
                         <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                             <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
@@ -179,17 +185,17 @@
                 <div class="multi-level collapse" role="list" id="submenu-assets" aria-expanded="false">
                     <ul class="flex-column nav">
                         <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/all-assets/">
+                            <a class="nav-link" href="http://localhost:8888/asset_one/index.php/all-assets/">
                                 <span class="sidebar-text">View All</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/add-new-asset/">
+                            <a class="nav-link" href="http://localhost:8888/asset_one/index.php/add-new-asset/">
                                 <span class="sidebar-text">Add New Asset</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/categories/">
+                            <a class="nav-link" href="http://localhost:8888/asset_one/index.php/categories/">
                                 <span class="sidebar-text">Categories</span>
                             </a>
                         </li>

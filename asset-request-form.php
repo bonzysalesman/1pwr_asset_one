@@ -42,28 +42,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="container py-5">
     <h1 class="mb-4">Request an Asset</h1>
     <form method="POST" action="">
-        <div class="mb-3">
-            <label for="asset_id" class="form-label">Select Asset</label>
-            <select name="asset_id" id="asset_id" class="form-control">
-                <option value="">-- Select Asset --</option>
-                <?php foreach ($assets as $asset): ?>
-                    <option value="<?php echo esc_attr($asset->asset_id); ?>"><?php echo esc_html($asset->name); ?></option>
-                <?php endforeach; ?>
-            </select>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="asset_id" class="form-label">Select Asset</label>
+                <br />
+                <input type="text" id="asset_search" class="form-control" placeholder="Start typing to search for an asset" autocomplete="off" style="color: #d3d3d3; min-width: 300px;">
+                <input type="hidden" name="asset_id" id="asset_id">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="related_employee_id" class="form-label">Select Employee for Request</label>
+                <select name="related_employee_id" id="related_employee_id" class="form-control">
+                    <option value="">-- Select Employee --</option>
+                    <?php foreach ($employees as $employee): ?>
+                        <option value="<?php echo esc_attr($employee->employee_id); ?>"><?php echo esc_html($employee->employee_name); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
-        
-        <div class="mb-3">
-            <label for="related_employee_id" class="form-label">Select Employee for Request</label>
-            <select name="related_employee_id" id="related_employee_id" class="form-control">
-                <option value="">-- Select Employee --</option>
-                <?php foreach ($employees as $employee): ?>
-                    <option value="<?php echo esc_attr($employee->employee_id); ?>"><?php echo esc_html($employee->employee_name); ?></option>
-                <?php endforeach; ?>
-            </select>
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </div>
         </div>
-
-        <button type="submit" class="btn btn-primary">Submit Request</button>
     </form>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var assets = <?php echo json_encode($assets); ?>;
+    var assetNames = assets.map(function(asset) {
+        return {
+            label: asset.name,
+            value: asset.asset_id
+        };
+    });
+
+    var input = document.getElementById("asset_search");
+    var awesomplete = new Awesomplete(input, {
+        list: assetNames.map(a => a.label)
+    });
+
+    input.addEventListener("awesomplete-selectcomplete", function(event) {
+        var selected = assetNames.find(a => a.label === event.text.value);
+        document.getElementById("asset_id").value = selected ? selected.value : '';
+    });
+});
+</script>
 
 <?php get_footer(); ?>
