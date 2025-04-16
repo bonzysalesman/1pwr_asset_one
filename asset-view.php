@@ -14,9 +14,9 @@ $asset_id = isset($_GET['asset_id']) ? intval($_GET['asset_id']) : 0;
 
 // Fetch asset details with category
 $asset = $wpdb->get_row($wpdb->prepare("
-    SELECT a.*, c.name as category_name 
-    FROM assets a 
-    LEFT JOIN categories c ON a.category_id = c.category_id 
+    SELECT a.*, c.name as category_name
+    FROM assets a
+    LEFT JOIN categories c ON a.category_id = c.category_id
     WHERE a.asset_id = %d
 ", $asset_id));
 
@@ -24,7 +24,7 @@ $asset = $wpdb->get_row($wpdb->prepare("
 $current_allocation = null;
 if ($asset->status !== 'Unallocated') {
     $current_allocation = $wpdb->get_row($wpdb->prepare("
-        SELECT a.*, 
+        SELECT a.*,
                CONCAT(e.first_name, ' ', e.last_name) as employee_name,
                e.email as employee_email,
                d.short_name as department_name
@@ -39,8 +39,8 @@ if ($asset->status !== 'Unallocated') {
 
 // Fetch recent transactions (last 5)
 $recent_transactions = $wpdb->get_results($wpdb->prepare("
-    SELECT t.*, 
-           COALESCE(CONCAT(e1.first_name, ' ', e1.last_name), '') as performed_by_name, 
+    SELECT t.*,
+           COALESCE(CONCAT(e1.first_name, ' ', e1.last_name), '') as performed_by_name,
            COALESCE(CONCAT(e2.first_name, ' ', e2.last_name), '') as related_employee_name
     FROM asset_transactions t
     LEFT JOIN employees e1 ON t.performed_by = e1.employee_id
@@ -73,7 +73,7 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                 <?php //echo "<pre>"; print_r($recent_transactions); echo "</pre>"; ?>
             </div>
             <div>
-                <a href="<?php echo get_permalink(get_page_by_path('edit-asset')) . '?asset_id=' . $asset_id; ?>" 
+                <a href="<?php echo get_permalink(get_page_by_path('edit-asset')) . '?asset_id=' . $asset_id; ?>"
                    class="btn btn-sm btn-gray-800 d-inline-flex align-items-center me-2">
                     <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path>
@@ -81,7 +81,7 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                     </svg>
                     Edit Asset
                 </a>
-                <a href="<?php echo get_permalink(get_page_by_path('asset-history')) . '?asset_id=' . $asset_id; ?>" 
+                <a href="<?php echo get_permalink(get_page_by_path('asset-history')) . '?asset_id=' . $asset_id; ?>"
                    class="btn btn-sm btn-gray-800 d-inline-flex align-items-center">
                     <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
@@ -92,40 +92,36 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
             </div>
         </div>
 
-        <!-- Add necessary hidden fields -->
         <input type="hidden" name="asset_id" value="<?php echo esc_attr($asset_id); ?>">
         <input type="hidden" name="action" value="update_asset">
         <?php wp_nonce_field('update_asset_' . $asset_id, 'asset_nonce'); ?>
 
-        <!-- Rest of your form fields -->
-        
-    </form>
+        </form>
 </div>
 
 <?php if ($asset): ?>
     <div class="row">
         <div class="col-12 col-xl-8">
-            <!-- Asset Details Card -->
             <div class="card card-body border-0 shadow mb-4">
                 <h2 class="h5 mb-4">Asset Information</h2>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <div>
-                            <label class="mb-1">Asset Name</label>
-                            <p class="mb-2"><strong><?php echo esc_html($asset->name); ?></strong></p>
+                            <label class="mb-1"><strong>Asset Name</strong></label>
+                            <p class="mb-2"><?php echo esc_html($asset->name); ?></p>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div>
-                            <label class="mb-1">Category</label>
-                            <p class="mb-2"><strong><?php echo esc_html($asset->category_name); ?></strong></p>
+                            <label class="mb-1"><strong>Category</strong></label>
+                            <p class="mb-2"><?php echo esc_html($asset->category_name); ?></p>
                         </div>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <div>
-                            <label class="mb-1">Status</label>
+                            <label class="mb-1"><strong>Status</strong></label>
                             <p class="mb-2">
                                 <span class="badge bg-<?php echo $asset->status === 'Allocated' ? 'success' : ($asset->status === 'Returned' ? 'warning' : 'secondary'); ?>">
                                     <?php echo esc_html($asset->status); ?>
@@ -135,8 +131,8 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                     </div>
                     <div class="col-md-6 mb-3">
                         <div>
-                            <label class="mb-1">Location</label>
-                            <p class="mb-2"><strong><?php echo esc_html($asset->location); ?></strong></p>
+                            <label class="mb-1"><strong>Location</strong></label>
+                            <p class="mb-2"><?php echo esc_html($asset->location); ?></p>
                         </div>
                     </div>
                 </div>
@@ -144,7 +140,7 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                 <div class="row">
                     <div class="col-12 mb-3">
                         <div>
-                            <label class="mb-1">Description</label>
+                            <label class="mb-1"><strong>Description</strong></label>
                             <p class="mb-2"><?php echo esc_html($asset->description); ?></p>
                         </div>
                     </div>
@@ -152,7 +148,6 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                 <?php endif; ?>
             </div>
 
-            <!-- Recent Transactions Card -->
             <div class="card card-body border-0 shadow mb-4">
                 <h2 class="h5 mb-4">Recent Activity</h2>
                 <?php if ($recent_transactions): ?>
@@ -162,7 +157,6 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                                 <div class="row align-items-center">
                                     <?php //echo "<pre>"; print_r($transaction); echo "</pre>"; ?>
                                     <div class="col-auto">
-                                        <!-- Transaction type icon -->
                                         <?php
                                         $icon_class = '';
                                         switch ($transaction->transaction_type) {
@@ -197,11 +191,11 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                                                     to <?php echo esc_html($transaction->related_employee_name); ?>
                                                 <?php endif; ?>
                                             <?php else: ?>
-                                                Added as New Asset    
-                                            <?php endif; ?>    
+                                                Added as New Asset
+                                            <?php endif; ?>
                                         </h3>
                                         <p class="text-muted small mb-0">
-                                            By <?php echo esc_html($transaction->performed_by_name); ?> - 
+                                            By <?php echo esc_html($transaction->performed_by_name); ?> -
                                             <?php echo esc_html($transaction->description); ?>
                                         </p>
                                     </div>
@@ -221,14 +215,12 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
         </div>
 
         <div class="col-12 col-xl-4">
-            <!-- Current Allocation Card -->
             <?php if ($current_allocation): ?>
             <div class="card card-body border-0 shadow mb-4">
                 <h2 class="h5 mb-4">Current Allocation</h2>
                 <?php //echo "<pre>"; print_r($current_allocation); echo "</pre>"; ?>
                 <div class="d-flex align-items-center">
                     <div class="me-3">
-                        <!-- User Avatar Placeholder -->
                         <div class="user-avatar bg-gray-300 rounded">
                             <?php echo strtoupper(substr($current_allocation->employee_name, 0, 1)); ?>
                         </div>
@@ -242,41 +234,124 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                 </div>
                 <div class="mt-3">
                     <div class="mb-2">
-                        <label class="small mb-1">Email</label>
+                        <label class="small mb-1"><strong>Email</strong></label>
                         <p class="mb-0"><?php echo esc_html($current_allocation->employee_email); ?></p>
                     </div>
                     <div>
-                        <label class="small mb-1">Allocated Since</label>
+                        <label class="small mb-1"><strong>Allocated Since</strong></label>
                         <p class="mb-0"><?php echo esc_html(date('F j, Y', strtotime($current_allocation->allocation_date))); ?></p>
                     </div>
                 </div>
             </div>
             <?php endif; ?>
 
-            <!-- Asset Properties Card -->
             <div class="card card-body border-0 shadow">
                 <h2 class="h5 mb-4">Asset Properties</h2>
                 <div class="mb-3">
                     <div class="mb-2">
-                        <label class="small mb-1">Asset ID</label>
+                        <label class="small mb-1"><strong>Asset ID</strong></label>
                         <p class="mb-0"><?php echo esc_html($asset->asset_id); ?></p>
                     </div>
                     <?php if ($asset->serial_number): ?>
                     <div class="mb-2">
-                        <label class="small mb-1">Serial Number</label>
+                        <label class="small mb-1"><strong>Serial Number</strong></label>
                         <p class="mb-0"><?php echo esc_html($asset->serial_number); ?></p>
                     </div>
                     <?php endif; ?>
                     <?php if ($asset->purchase_date): ?>
                     <div class="mb-2">
-                        <label class="small mb-1">Purchase Date</label>
+                        <label class="small mb-1"><strong>Purchase Date</strong></label>
                         <p class="mb-0"><?php echo esc_html(date('F j, Y', strtotime($asset->purchase_date))); ?></p>
                     </div>
                     <?php endif; ?>
                     <?php if ($asset->warranty_expiry): ?>
-                    <div>
-                        <label class="small mb-1">Warranty Expiry</label>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Warranty Expiry</strong></label>
                         <p class="mb-0"><?php echo esc_html(date('F j, Y', strtotime($asset->warranty_expiry))); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->VersionHistory): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Version History</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->VersionHistory); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->ConditionStatus): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Condition Status</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->ConditionStatus); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->PurchasePrice): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Purchase Price</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->PurchasePrice); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->CurrentValue): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Current Value</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->CurrentValue); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->Manufacturer): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Manufacturer</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->Manufacturer); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->Model): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Model</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->Model); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->Comments): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Comments</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->Comments); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->AssignedTo): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Assigned To</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->AssignedTo); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->Owner): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Owner</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->Owner); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->RetiredDate): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Retired Date</strong></label>
+                        <p class="mb-0"><?php echo esc_html(date('F j, Y', strtotime($asset->RetiredDate))); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->NewTagNumber): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>New Tag Number</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->NewTagNumber); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->OldTagNumber): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Old Tag Number</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->OldTagNumber); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->Quantity): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Quantity</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->Quantity); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($asset->QuantityWrittenOff): ?>
+                    <div>
+                        <label class="small mb-1"><strong>Quantity Written Off</strong></label>
+                        <p class="mb-0"><?php echo esc_html($asset->QuantityWrittenOff); ?></p>
                     </div>
                     <?php endif; ?>
                 </div>

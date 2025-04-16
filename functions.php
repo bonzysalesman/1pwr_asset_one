@@ -249,4 +249,614 @@ function enqueue_datatables_assets() {
 add_action('wp_enqueue_scripts', 'enqueue_datatables_assets');
 
 
+
+
+
+// Handle Check In Action
+add_action('admin_post_check_in_old_asset', 'handle_check_in_old_asset');
+add_action('admin_post_nopriv_check_in_old_asset', 'handle_check_in_old_asset'); // For non-logged-in users if needed
+
+function handle_check_in_old_asset() {
+    if (!isset($_POST['check_in_nonce']) || !wp_verify_nonce($_POST['check_in_nonce'], 'check_in_old_asset_nonce')) {
+        wp_nonce_ays( 'check_in_old_asset_nonce' );
+        exit;
+    }
+
+    $transaction_id = isset($_POST['transaction_id']) ? intval($_POST['transaction_id']) : 0;
+    $asset_id = isset($_POST['asset_id']) ? sanitize_text_field($_POST['asset_id']) : '';
+
+    global $wpdb;
+
+    // Logic to update the allocations table for check-in
+    // You'll need to determine which allocation record corresponds to this asset.
+    // This might involve querying the allocations table based on asset_id and status.
+
+    $allocation_record = $wpdb->get_row( $wpdb->prepare(
+        "SELECT allocation_id, employee_id FROM allocations WHERE asset_id = %d AND status = 'Allocated'",
+        $asset_id // Assuming asset_id in allocations is INT and corresponds
+                   // to the asset ID from your assets table
+    ) );
+
+    if ($allocation_record) {
+        $wpdb->update(
+            'allocations',
+            array(
+                'status' => 'Returned',
+                'return_date' => current_time('Y-m-d')
+            ),
+            array('allocation_id' => $allocation_record->allocation_id)
+        );
+        // Optionally, you might want to log this action or update the asset_transactions table.
+        wp_safe_redirect(wp_get_referer()); // Redirect back to the previous page
+        exit;
+    } else {
+        // Handle the case where no active allocation is found for this asset
+        wp_die('No active allocation found for Asset ID: ' . esc_html($asset_id));
+    }
+}
+
+// Handle Delete Transaction Action
+add_action('admin_post_delete_old_transaction', 'handle_delete_old_transaction');
+add_action('admin_post_nopriv_delete_old_transaction', 'handle_delete_old_transaction'); // For non-logged-in users if needed
+
+function handle_delete_old_transaction() {
+    if (!isset($_POST['delete_nonce']) || !wp_verify_nonce($_POST['delete_nonce'], 'delete_old_transaction_nonce')) {
+        wp_nonce_ays( 'delete_old_transaction_nonce' );
+        exit;
+    }
+
+    $transaction_id = isset($_POST['transaction_id']) ? intval($_POST['transaction_id']) : 0;
+    $asset_id = isset($_POST['asset_id']) ? sanitize_text_field($_POST['asset_id']) : '';
+
+    global $wpdb;
+
+    // Logic to delete the corresponding record from the allocations table
+    // Again, you'll need to identify the correct allocation record.
+    $allocation_record_to_delete = $wpdb->get_var( $wpdb->prepare(
+        "SELECT allocation_id FROM allocations WHERE asset_id = %d",
+        // Assuming asset_id in allocations is INT and corresponds
+        // to the asset ID from your assets table
+        $asset_id
+    ) );
+
+    if ($allocation_record_to_delete) {
+        $wpdb->delete(
+            'allocations',
+            array('allocation_id' => $allocation_record_to_delete)
+        );
+        // Optionally, you might want to log this action or update the asset_transactions table.
+        wp_safe_redirect(wp_get_referer()); // Redirect back to the previous page
+        exit;
+    } else {
+        // Handle the case where no allocation is found for this asset
+        wp_die('No allocation found for Asset ID: ' . esc_html($asset_id));
+    }
+}
+
+
+/**
+ * AJAX handler to search for assets.
+ */
+function search_assets_ajax_handler() {
+    check_ajax_referer('search_assets_nonce', '_ajax_nonce');
+
+    $search_term = sanitize_text_field($_POST['s']);
+    $args = array(
+        'post_type' => 'asset', // Make sure this matches your asset post type
+        'posts_per_page' => -1, // Retrieve all matching assets
+        's' => $search_term
+    );
+    $assets = get_posts($args);
+
+    $results = '';
+    if ($assets) {
+        foreach ($assets as $asset) {
+            $results .= '<li data-asset-id="' . esc_attr($asset->ID) . '">' . esc_html($asset->post_title) . '</li>';
+        }
+    } else {
+        $results .= '<li>No assets found.</li>';
+    }
+
+    echo $results;
+    wp_die();
+}
+add_action('wp_ajax_search_assets_ajax', 'search_assets_ajax_handler');
+
+
+function process_bulk_checkout_form() {
+    // Verify nonce
+    if (!isset($_POST['bulk_asset_checkout_nonce']) || !wp_verify_nonce($_POST['bulk_asset_checkout_nonce'], 'bulk_asset_checkout_action')) {
+        wp_nonce_ays('bulk_asset_checkout_action');
+        return;
+    }
+
+    // Check if the action is correct
+    if (isset($_POST['action']) && $_POST['action'] === 'process_bulk_checkout') {
+        global $wpdb;
+
+        // Sanitize input data
+        $selected_asset_ids_str = sanitize_text_field($_POST['bulk_checkout_assets']);
+        error_log("Selected Asset IDs (raw): " . $selected_asset_ids_str); // Debug line
+        $selected_asset_ids = json_decode($selected_asset_ids_str, true);
+        error_log("Selected Asset IDs (parsed): " . print_r($selected_asset_ids, true)); // Debug line
+
+        // Existing code...
+
+        if (!empty($selected_asset_ids)) {
+            // Existing code...
+        } else {
+            // No assets selected
+            $redirect_url = add_query_arg('bulk_checkout_error', 'no_assets_selected', get_permalink(get_page_by_path('bulk-checkout'))); // Redirect back to the form
+            wp_safe_redirect($redirect_url);
+            exit;
+        }
+    } else {
+        // Invalid action
+        wp_die('Invalid action.');
+    }
+}
+add_action('admin_post_process_bulk_checkout', 'process_bulk_checkout_form');
+add_action('admin_post_nopriv_process_bulk_checkout', 'process_bulk_checkout_form'); // For non-logged-in users if needed (adjust permissions accordingly)
+
+
+
+/**
+ * Handles the bulk asset check-in form submission with quantity.
+ */
+function process_bulk_checkin_form() {
+    // Verify nonce
+    if (!isset($_POST['bulk_asset_checkin_nonce']) || !wp_verify_nonce($_POST['bulk_asset_checkin_nonce'], 'bulk_asset_checkin_action')) {
+        wp_nonce_ays('bulk_asset_checkin_action');
+        return;
+    }
+
+    // Check if the action is correct
+    if (isset($_POST['action']) && $_POST['action'] === 'process_bulk_checkin') {
+        global $wpdb;
+
+        // Sanitize input data
+        $bulk_checkout_id = isset($_POST['bulk_checkout_id']) ? intval($_POST['bulk_checkout_id']) : 0;
+        $assets_to_checkin = isset($_POST['assets_to_checkin']) ? $_POST['assets_to_checkin'] : array();
+        $checked_in_by = get_current_user_id();
+        $checkin_date = current_time('mysql');
+
+        if ($bulk_checkout_id > 0 && !empty($assets_to_checkin)) {
+            $success_count = 0;
+            foreach ($assets_to_checkin as $asset_id => $quantity_to_checkin) {
+                $asset_id = intval($asset_id);
+                $quantity_to_checkin = intval($quantity_to_checkin);
+
+                if ($quantity_to_checkin > 0) {
+                    // Update asset status and record transaction for the specified quantity
+                    for ($i = 0; $i < $quantity_to_checkin; $i++) {
+                        // Find one 'Checked Out' asset with the given ID that was part of this bulk checkout
+                        $asset_to_checkin = $wpdb->get_row($wpdb->prepare("SELECT a.asset_id
+                                                                         FROM assets a
+                                                                         JOIN bulk_checkout_items bci ON a.asset_id = bci.asset_id
+                                                                         WHERE bci.bulk_checkout_id = %d AND a.asset_id = %d AND a.status = 'Checked Out'
+                                                                         LIMIT 1", $bulk_checkout_id, $asset_id));
+
+                        if ($asset_to_checkin) {
+                            // Update asset status to 'Unallocated'
+                            $wpdb->update(
+                                'assets',
+                                array('status' => 'Unallocated'),
+                                array('asset_id' => $asset_to_checkin->asset_id),
+                                array('%s'),
+                                array('%d')
+                            );
+
+                            // Record asset transaction for check-in
+                            record_asset_transaction(array(
+                                'asset_id' => $asset_to_checkin->asset_id,
+                                'transaction_type' => 'Check In',
+                                'description' => 'Checked in from bulk checkout ID: ' . $bulk_checkout_id,
+                                'new_status' => 'Unallocated'
+                            ));
+
+                            // Optionally, update bulk_checkout_items with return date (for each returned item)
+                            $wpdb->update(
+                                'bulk_checkout_items',
+                                array('return_date' => $checkin_date),
+                                array('bulk_checkout_id' => $bulk_checkout_id, 'asset_id' => $asset_to_checkin->asset_id, 'return_date' => null), // Only update if not already returned
+                                array('%s'),
+                                array('%d', '%d', '%s')
+                            );
+
+                            $success_count++;
+                        } else {
+                            // Handle case where no more checked out assets of this type are found for this bulk checkout
+                            // You might want to log this or inform the user
+                            continue; // Move to the next iteration
+                        }
+                    }
+                }
+            }
+
+            if ($success_count > 0) {
+                // Redirect with success message
+                $redirect_url = add_query_arg('bulk_checkin_success', 'true', get_permalink(get_page_by_path('bulk-checkout-history')));
+                wp_safe_redirect($redirect_url);
+                exit;
+            } else {
+                // Redirect with an error message if no assets were checked in
+                $redirect_url = add_query_arg('bulk_checkin_error', 'no_assets_checked_in', get_permalink(get_page_by_path('bulk-checkin')) . '?bulk_checkout_id=' . $bulk_checkout_id);
+                wp_safe_redirect($redirect_url);
+                exit;
+            }
+        } else {
+            // No bulk checkout ID or no assets selected
+            $redirect_url = add_query_arg('bulk_checkin_error', 'invalid_request', get_permalink(get_page_by_path('bulk-checkin')) . '?bulk_checkout_id=' . $bulk_checkout_id);
+            wp_safe_redirect($redirect_url);
+            exit;
+        }
+    } else {
+        // Invalid action
+        wp_die('Invalid action.');
+    }
+}
+remove_action('admin_post_process_bulk_checkin', 'process_bulk_checkin_form');
+add_action('admin_post_process_bulk_checkin', 'process_bulk_checkin_form');
+add_action('admin_post_nopriv_process_bulk_checkin', 'process_bulk_checkin_form');
+
+
+
+/**
+ * Generates the packing list for a bulk checkout as HTML or PDF.
+ */
+function generate_bulk_checkout_packing_list() {
+    if (isset($_GET['generate_packing_list']) && $_GET['generate_packing_list'] === 'true' && isset($_GET['bulk_checkout_id']) && is_numeric($_GET['bulk_checkout_id'])) {
+        global $wpdb;
+        $bulk_checkout_id = intval($_GET['bulk_checkout_id']);
+
+        // Fetch bulk checkout details
+        $bulk_checkout = $wpdb->get_row($wpdb->prepare("SELECT bc.*, u.display_name AS checked_out_by_name
+                                                      FROM bulk_checkouts bc
+                                                      LEFT JOIN wp_users u ON bc.checked_out_by = u.ID
+                                                      WHERE bc.bulk_checkout_id = %d", $bulk_checkout_id));
+
+        // Fetch all assets for this bulk checkout with their quantities
+        $assets = $wpdb->get_results($wpdb->prepare("SELECT bci.quantity, a.name AS asset_name, a.asset_id
+                                                   FROM bulk_checkout_items bci
+                                                   JOIN assets a ON bci.asset_id = a.asset_id
+                                                   WHERE bci.bulk_checkout_id = %d", $bulk_checkout_id));
+
+        if ($bulk_checkout && !empty($assets)) {
+            // Start output buffering for HTML content
+            ob_start();
+            ?>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Packing List - Bulk Checkout #<?php echo esc_html($bulk_checkout->bulk_checkout_id); ?></title>
+                <style>
+                    body { font-family: sans-serif; font-size: 12px; line-height: 1.3; }
+                    .container { width: 95%; margin: 0 auto; padding: 20px; }
+                    h1, h2, h3 { text-align: center; margin-bottom: 10px; }
+                    .info { margin-bottom: 10px; }
+                    .info strong { font-weight: bold; margin-right: 3px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                    th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    .signature-section { margin-top: 20px; width: 100%; }
+                    .signature-table { width: 100%; border-collapse: collapse; }
+                    .signature-table td { width: 33.33%; padding: 10px; vertical-align: top; }
+                    .signature-line { border-top: 1px dashed #ccc; padding-top: 10px; margin-bottom: 10px; text-align: center; }
+                    .signature-line p { margin-bottom: 3px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>Packing List</h1>
+                    <h2>Bulk Checkout #<?php echo esc_html($bulk_checkout->bulk_checkout_id); ?></h2>
+
+                    <div class="info">
+                        <strong>Checkout Date:</strong> <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($bulk_checkout->checkout_date))); ?><br>
+                        <strong>Checked Out By:</strong> <?php echo esc_html($bulk_checkout->checked_out_by_name); ?><br>
+                        <strong>Receiver Name:</strong> <?php echo esc_html($bulk_checkout->receiver_name); ?><br>
+                        <strong>Destination:</strong> <?php echo esc_html($bulk_checkout->destination); ?>
+                    </div>
+
+                    <h3>Assets Included:</h3>
+                    <?php if (!empty($assets)) : ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Asset Name</th>
+                                    <th>Asset ID</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($assets as $asset) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html($asset->asset_name); ?></td>
+                                        <td><?php echo esc_html($asset->asset_id); ?></td>
+                                        <td><?php echo esc_html($asset->quantity); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else : ?>
+                        <p>No assets were included in this bulk checkout.</p>
+                    <?php endif; ?>
+
+                    <div class="signature-section">
+                        <table class="signature-table">
+                            <tr>
+                                <td>
+                                    <div class="signature-line">
+                                        <p>_________________________</p>
+                                        <p>Dispatcher's Name</p>
+                                        <p>Date: _________________________</p>
+                                        <p>Signature: _________________________</p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="signature-line">
+                                        <p>_________________________</p>
+                                        <p>Project Manager's Name</p>
+                                        <p>Date: _________________________</p>
+                                        <p>Signature: _________________________</p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="signature-line">
+                                        <p><?php echo esc_html($bulk_checkout->receiver_name); ?>: _________________________</p>
+                                        <p>Receiver's Name</p>
+                                        <p>Date: _________________________</p>
+                                        <p>Signature: _________________________</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </body>
+            </html>
+            <?php
+            $packing_list_html = ob_get_clean();
+
+            // Check if PDF generation is requested
+            if (isset($_GET['generate_pdf']) && $_GET['generate_pdf'] === 'true') {
+                // Include the TCPDF library
+                require_once(ABSPATH . 'wp-content/plugins/tcpdf/tcpdf.php'); // Adjust the path as needed
+
+                // Create new PDF document
+                $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
+                // Set document information
+                $pdf->SetCreator(PDF_CREATOR);
+                $pdf->SetAuthor(get_bloginfo('name'));
+                $pdf->SetTitle('Packing List - Bulk Checkout #' . $bulk_checkout->bulk_checkout_id);
+                $pdf->SetSubject('Bulk Asset Checkout Packing List');
+
+                // Remove default header/footer
+                $pdf->setPrintHeader(false);
+                $pdf->setPrintFooter(false);
+
+                // Set default monospaced font
+                $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+                // Set margins
+                $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+                $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+                $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+
+                // Set auto page breaks
+                $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+
+                // Set image scale factor
+                $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+
+                // Set some language-dependent strings (optional)
+                if (@file_exists(dirname(__FILE__).'/lang/eng.php')) {
+                    require_once(dirname(__FILE__).'/lang/eng.php');
+                    $pdf->setLanguageArray($l);
+                }
+
+                // Set font
+                $pdf->SetFont('helvetica', '', 10);
+
+                // Add a page
+                $pdf->AddPage();
+
+                // Output the HTML content
+                $pdf->writeHTML($packing_list_html, true, false, true, false, '');
+
+                // Close and output PDF document
+                $pdf->Output('packing_list_bulk_checkout_' . $bulk_checkout->bulk_checkout_id . '.pdf', 'D'); // 'D' for download, 'I' for inline display
+            } else {
+                // Output as HTML if PDF generation is not requested
+                echo $packing_list_html;
+                exit;
+            }
+        } else {
+            wp_die('Packing list could not be generated. Bulk checkout record or assets not found.');
+        }
+    }
+}
+remove_action('template_redirect', 'generate_bulk_checkout_packing_list_pdf'); // If you had this line
+add_action('template_redirect', 'generate_bulk_checkout_packing_list');    
+
+add_action('wp_ajax_get_assets', 'get_assets');
+add_action('wp_ajax_nopriv_get_assets', 'get_assets');
+
+function get_assets() {
+    global $wpdb;
+
+    // Number of records per page
+    $records_per_page = isset($_GET['length']) ? intval($_GET['length']) : 20;
+    $offset = isset($_GET['start']) ? intval($_GET['start']) : 0;
+
+    // Get search parameters
+    $search_term = isset($_GET['search']['value']) ? sanitize_text_field($_GET['search']['value']) : '';
+    $category_filter = isset($_GET['category']) ? intval($_GET['category']) : '';
+
+    // Build the query
+    $query = "SELECT a.*, c.name as category_name,
+              CASE WHEN al.status IS NULL THEN 'Unallocated' ELSE CONCAT(e.first_name, ' ', e.last_name) END as allocated_to,
+              CASE WHEN al.status IS NULL THEN '' ELSE d.short_name END as department_name
+              FROM assets a
+              LEFT JOIN categories c ON a.category_id = c.category_id
+              LEFT JOIN (
+                  SELECT al1.*
+                  FROM allocations al1
+                  LEFT JOIN allocations al2 ON al1.asset_id = al2.asset_id AND al1.allocation_date < al2.allocation_date
+                  WHERE al2.asset_id IS NULL AND al1.status = 'Allocated'
+              ) al ON a.asset_id = al.asset_id
+              LEFT JOIN employees e ON al.employee_id = e.employee_id
+              LEFT JOIN departments d ON e.department_id = d.department_id
+              WHERE 1=1";
+
+    // Add search conditions
+    if (!empty($search_term)) {
+        $search_condition = " AND (a.name LIKE %s OR a.description LIKE %s)";
+        $query .= $wpdb->prepare($search_condition, '%' . $search_term . '%', '%' . $search_term . '%');
+    }
+
+    if (!empty($category_filter)) {
+        $category_condition = " AND a.category_id = %d";
+        $query .= $wpdb->prepare($category_condition, $category_filter);
+    }
+
+    // Add sorting
+    $order_column = isset($_GET['order'][0]['column']) ? intval($_GET['order'][0]['column']) : 0;
+    $order_dir = isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], ['asc', 'desc']) ? $_GET['order'][0]['dir'] : 'asc';
+    $order_columns = ['a.name', 'category_name', 'status', 'allocated_to', 'department_name'];
+    $order_by = isset($order_columns[$order_column]) ? $order_columns[$order_column] : 'a.name';
+    $query .= " ORDER BY $order_by $order_dir";
+
+    // Add pagination
+    $query .= " LIMIT $offset, $records_per_page";
+
+    // Fetch assets
+    $assets = $wpdb->get_results($query);
+
+    // Count total records
+    $total_records = $wpdb->get_var("SELECT COUNT(*) FROM assets a WHERE 1=1");
+
+    // Prepare response
+    $response = [
+        'draw' => isset($_GET['draw']) ? intval($_GET['draw']) : 0,
+        'recordsTotal' => intval($total_records),
+        'recordsFiltered' => intval($total_records),
+        'data' => []
+    ];
+
+    foreach ($assets as $asset) {
+        $response['data'][] = [
+            esc_html($asset->name),
+            esc_html($asset->category_name),
+            "<span class='badge bg-" . ($asset->status === 'Allocated' ? 'success' : 'warning') . "'>" . esc_html($asset->status) . "</span>",
+            esc_html($asset->status === 'Unallocated' ? '' : $asset->allocated_to),
+            esc_html($asset->status === 'Unallocated' ? '' : $asset->department_name),
+            '<div class="btn-group">
+                <a href="' . esc_url(get_permalink(get_page_by_path('view-asset')) . '?asset_id=' . $asset->asset_id) . '" class="btn btn-link text-dark p-0 me-2" title="View Asset">
+                    <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                    </svg>
+                </a>
+                <a href="' . esc_url(get_permalink(get_page_by_path('edit-asset')) . '?asset_id=' . $asset->asset_id) . '" class="btn btn-link text-dark p-0 me-2" title="Edit Asset">
+                    <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path>
+                        <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path>
+                    </svg>
+                </a>
+                <a href="' . esc_url(get_permalink(get_page_by_path('asset-history')) . '?asset_id=' . $asset->asset_id) . '" class="btn btn-link text-dark p-0" title="View History">
+                    <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                    </svg>
+                </a>
+            </div>'
+        ];
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    wp_die();
+}
+function enqueue_bulk_checkout_script() {
+    if (is_page('bulk-asset-checkout')) {
+        wp_enqueue_script(
+            'bulk-checkout',
+            get_template_directory_uri() . '/assets/js/bulk-checkout.js',
+            array('jquery'),
+            '1.0.0',
+            true
+        );
+
+        // Localize script to pass the AJAX URL
+        wp_localize_script('bulk-checkout', 'ajaxurl', admin_url('admin-ajax.php'));
+    }
+}
+add_action('wp_enqueue_scripts', 'enqueue_bulk_checkout_script');
+
+add_action('wp_ajax_fetch_assets', 'fetch_assets');
+add_action('wp_ajax_nopriv_fetch_assets', 'fetch_assets'); // If non-logged-in users need access
+
+function fetch_assets() {
+    // Mock asset data - Replace with actual database query
+    $assets = [
+        ['id' => 1, 'name' => 'Laptop - Dell XPS 13'],
+        ['id' => 2, 'name' => 'Monitor - Samsung 24"'],
+        ['id' => 3, 'name' => 'Keyboard - Mechanical RGB'],
+    ];
+
+    // Search filter (if a search term is provided)
+    $search = isset($_GET['term']) ? sanitize_text_field($_GET['term']) : '';
+    if ($search) {
+        $assets = array_filter($assets, function ($asset) use ($search) {
+            return stripos($asset['name'], $search) !== false;
+        });
+    }
+
+    // Send JSON response
+    wp_send_json($assets);
+}
+add_action('wp_ajax_get_receiver_contact', 'get_receiver_contact');
+add_action('wp_ajax_nopriv_get_receiver_contact', 'get_receiver_contact'); // If non-logged-in users need access
+
+function get_receiver_contact() {
+    // Mock receiver data - Replace with database query
+    $receivers = [
+        ['name' => 'John Doe', 'contact' => '123-456-7890'],
+        ['name' => 'Jane Smith', 'contact' => '987-654-3210'],
+        ['name' => 'Alice Johnson', 'contact' => '555-123-4567'],
+    ];
+
+    $name = isset($_GET['name']) ? sanitize_text_field($_GET['name']) : '';
+    $receiver = array_filter($receivers, function ($receiver) use ($name) {
+        return $receiver['name'] === $name;
+    });
+
+    // Send JSON response
+    wp_send_json(array_shift($receiver));
+}
+add_action('wp_ajax_fetch_receivers', 'fetch_receivers');
+add_action('wp_ajax_nopriv_fetch_receivers', 'fetch_receivers'); // If non-logged-in users need access
+
+function fetch_receivers() {
+    // Mock receiver data - Replace with database query
+    $receivers = [
+        ['name' => 'John Doe', 'contact' => '123-456-7890'],
+        ['name' => 'Jane Smith', 'contact' => '987-654-3210'],
+        ['name' => 'Alice Johnson', 'contact' => '555-123-4567'],
+    ];
+
+    // Search filter (if a search term is provided)
+    $search = isset($_GET['term']) ? sanitize_text_field($_GET['term']) : '';
+    if ($search) {
+        $receivers = array_filter($receivers, function ($receiver) use ($search) {
+            return stripos($receiver['name'], $search) !== false;
+        });
+    }
+
+    // Send JSON response
+    wp_send_json($receivers);
+}
 ?>

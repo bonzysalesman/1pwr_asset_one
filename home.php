@@ -136,188 +136,226 @@ $condition_statuses = $wpdb->get_results("SELECT status, COUNT(*) as count FROM 
         </div>
 
         <ul class="nav flex-column pt-3 pt-md-0">
-            <li class="nav-item">
-                <a href="<?php bloginfo('url'); ?>" class="nav-link d-flex align-items-center">
-                    <span class="sidebar-icon">
-                        <img src="<?php bloginfo('template_url'); ?>/assets/img/brand/1pwr_logo.png" style="margin-top: -5px; width: 80%;" alt="1PWR Logo">
-                    </span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="<?php bloginfo('url'); ?>" class="nav-link">
-                    <span class="sidebar-icon">
-                        <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
-                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path>
-                        </svg>
-                    </span>
-                    <span class="sidebar-text">Dashboard</span>
-                </a>
-            </li>
-            <!-- Assets Menu -->
-            <li class="nav-item">
-                <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-assets" aria-expanded="false">
-                    <span>
-                        <span class="sidebar-icon">
-                            <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9V9h2v4zm0-6H9V5h2v2z"></path>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Assets</span>
-                    </span>
-                    <span class="link-arrow">
-                        <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </span>
+    <li class="nav-item">
+        <a href="<?php bloginfo('url'); ?>" class="nav-link d-flex align-items-center">
+            <span class="sidebar-icon">
+                <img src="<?php bloginfo('template_url'); ?>/assets/img/brand/1pwr_logo.png" style="margin-top: -5px; width: 80%;" alt="1PWR Logo">
+            </span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="<?php bloginfo('url'); ?>" class="nav-link">
+            <span class="sidebar-icon">
+                <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path>
+                    <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path>
+                </svg>
+            </span>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+    </li>
+    <!-- Assets Menu -->
+    <li class="nav-item">
+        <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-assets" aria-expanded="false">
+            <span>
+                <span class="sidebar-icon">
+                    <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9V9h2v4zm0-6H9V5h2v2z"></path>
+                    </svg>
                 </span>
-                <div class="multi-level collapse" role="list" id="submenu-assets" aria-expanded="false">
-                    <ul class="flex-column nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/all-assets/">
-                                <span class="sidebar-text">View All</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/add-new-asset/">
-                                <span class="sidebar-text">Add New Asset</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/categories/">
-                                <span class="sidebar-text">Categories</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            <!-- Employees Menu -->
-            <li class="nav-item">
-                <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-employees" aria-expanded="false">
-                    <span>
-                        <span class="sidebar-icon">
-                            <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 2a2 2 0 00-2 2v1h4V4a2 2 0 00-2-2z"></path>
-                                <path fill-rule="evenodd" d="M2 9a2 2 0 012-2h12a2 2 0 012 2v5a2 2 0 01-2 2H4a2 2 0 01-2-2V9zm4 1a1 1 0 100 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Employees</span>
-                    </span>
-                    <span class="link-arrow">
-                        <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </span>
+                <span class="sidebar-text">Assets</span>
+            </span>
+            <span class="link-arrow">
+                <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            </span>
+        </span>
+        <div class="multi-level collapse" role="list" id="submenu-assets" aria-expanded="false">
+            <ul class="flex-column nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url');?>/index.php/all-assets/">
+                        <span class="sidebar-text">View All</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url');?>/index.php/add-new-asset/">
+                        <span class="sidebar-text">Add New Asset</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url');?>/index.php/categories/">
+                        <span class="sidebar-text">Categories</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </li>
+    <!-- Employees Menu -->
+    <li class="nav-item">
+        <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-employees" aria-expanded="false">
+            <span>
+                <span class="sidebar-icon">
+                    <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 2a2 2 0 00-2 2v1h4V4a2 2 0 00-2-2z"></path>
+                        <path fill-rule="evenodd" d="M2 9a2 2 0 012-2h12a2 2 0 012 2v5a2 2 0 01-2 2H4a2 2 0 01-2-2V9zm4 1a1 1 0 100 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                    </svg>
                 </span>
-                <div class="multi-level collapse" role="list" id="submenu-employees" aria-expanded="false">
-                    <ul class="flex-column nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/view-all-employees/">
-                                <span class="sidebar-text">View All Employees</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/employee-add-new/">
-                                <span class="sidebar-text">Add New</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/departments/">
-                                <span class="sidebar-text">Departments</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            <!-- Requests Menu -->
-            <li class="nav-item">
-                <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-requests" aria-expanded="false">
-                    <span>
-                        <span class="sidebar-icon">
-                            <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm1 3h10v10H5V5zm2 1a1 1 0 100 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h4a1 1 0 100-2H7z"></path>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Requests</span>
-                    </span>
-                    <span class="link-arrow">
-                        <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </span>
+                <span class="sidebar-text">Employees</span>
+            </span>
+            <span class="link-arrow">
+                <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            </span>
+        </span>
+        <div class="multi-level collapse" role="list" id="submenu-employees" aria-expanded="false">
+            <ul class="flex-column nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/view-all-employees/">
+                        <span class="sidebar-text">View All Employees</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/employee-add-new/">
+                        <span class="sidebar-text">Add New</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/departments/">
+                        <span class="sidebar-text">Departments</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </li>
+    <!-- Requests Menu -->
+    <li class="nav-item">
+        <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-requests" aria-expanded="false">
+            <span>
+                <span class="sidebar-icon">
+                    <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm1 3h10v10H5V5zm2 1a1 1 0 100 2h6a1 1 0 100-2H7zm0 4a1 1 0 100 2h4a1 1 0 100-2H7z"></path>
+                    </svg>
                 </span>
-                <div class="multi-level collapse" role="list" id="submenu-requests" aria-expanded="false">
-                    <ul class="flex-column nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/request-list/">
-                                <span class="sidebar-text">View All Requests</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/asset-request-form/">
-                                <span class="sidebar-text">Add New</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/asset-return-form/">
-                                <span class="sidebar-text">Returns</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
-            <?php if (is_user_logged_in()) { ?>
-                <!-- Logged In Links -->
+                <span class="sidebar-text">Requests</span>
+            </span>
+            <span class="link-arrow">
+                <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            </span>
+        </span>
+        <div class="multi-level collapse" role="list" id="submenu-requests" aria-expanded="false">
+            <ul class="flex-column nav">
                 <li class="nav-item">
-                    <a href="<?php bloginfo('url'); ?>/index.php/account/" class="nav-link d-flex align-items-center">
-                        <span class="sidebar-icon">
-                            <svg class="dropdown-icon text-gray-400 me-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 1.5rem; height: 1.5rem;">
-                                <path fill-rule="evenodd" d="M12 2a5 5 0 0 1 5 5v3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h3V7a5 5 0 0 1 5-5zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-4 9h8a3 3 0 0 0-8 0z" clip-rule="evenodd"/>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Account</span>
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/request-list/">
+                        <span class="sidebar-text">View All Requests</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="nav-link d-flex align-items-center">
-                        <span class="sidebar-icon">
-                            <svg class="dropdown-icon text-gray-400 me-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 1.5rem; height: 1.5rem;">
-                                <path fill-rule="evenodd" d="M9 3a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3v-3a1 1 0 1 1 2 0v4a1 1 0 0 1-1 1H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h3zm9.707 7.293a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L16.586 12H10a1 1 0 1 1 0-2h6.586l-2.293-2.293a1 1 0 0 1 1.414-1.414l4 4z" clip-rule="evenodd"/>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Logout</span>
-                    </a>
-                </li>
-            <?php } else { ?>
-                <!-- Logged Out Links -->
-                <li class="nav-item">
-                    <a href="<?php bloginfo('url'); ?>/index.php/login/" target="_blank" class="nav-link d-flex align-items-center">
-                        <span class="sidebar-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-                                <circle cx="12" cy="7" r="4"></circle>
-                                <path d="M15 13h-6v-2h6v-3l5 4-5 4v-3z"></path>
-                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Sign In</span>
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/asset-request-form/">
+                        <span class="sidebar-text">Add New</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?php bloginfo('url'); ?>/index.php/register/" target="_blank" class="nav-link d-flex align-items-center">
-                        <span class="sidebar-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-                                <circle cx="12" cy="7" r="4"></circle>
-                                <line x1="12" y1="13" x2="12" y2="19" stroke="currentColor" stroke-width="2"></line>
-                                <line x1="9" y1="16" x2="15" y2="16" stroke="currentColor" stroke-width="2"></line>
-                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Register</span>
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/asset-return-form/">
+                        <span class="sidebar-text">Returns</span>
                     </a>
                 </li>
-            <?php } ?>
-        </ul>
+            </ul>
+        </div>
+    </li>
+    <!-- Checkouts Menu -->
+    <li class="nav-item">
+        <span class="nav-link collapsed d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#submenu-checkouts" aria-expanded="false">
+            <span>
+                <span class="sidebar-icon">
+                    <svg class="icon icon-xs me-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9V9h2v4zm0-6H9V5h2v2z"></path>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Checkouts</span>
+            </span>
+            <span class="link-arrow">
+                <svg class="icon icon-sm" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            </span>
+        </span>
+        <div class="multi-level collapse" role="list" id="submenu-checkouts" aria-expanded="false">
+            <ul class="flex-column nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/bulk-checkout-history/">
+                        <span class="sidebar-text">View All Checkouts</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/make-bulk-checkouts/">
+                        <span class="sidebar-text">Make Bulk Checkouts</span>
+                    </a>
+                </li>
+                <!--
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url'); ?>/index.php/make-bulk-checkins/">
+                        <span class="sidebar-text">Make Bulk Check-ins</span>
+                    </a>
+                </li>
+                -->
+            </ul>
+        </div>
+    </li>
+    <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
+    <?php if (is_user_logged_in()) { ?>
+        <!-- Logged In Links -->
+        <li class="nav-item">
+            <a href="<?php bloginfo('url'); ?>/index.php/account/" class="nav-link d-flex align-items-center">
+                <span class="sidebar-icon">
+                    <svg class="dropdown-icon text-gray-400 me-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 1.5rem; height: 1.5rem;">
+                        <path fill-rule="evenodd" d="M12 2a5 5 0 0 1 5 5v3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h3V7a5 5 0 0 1 5-5zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-4 9h8a3 3 0 0 0-8 0z" clip-rule="evenodd"/>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Account</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="nav-link d-flex align-items-center">
+                <span class="sidebar-icon">
+                    <svg class="dropdown-icon text-gray-400 me-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 1.5rem; height: 1.5rem;">
+                        <path fill-rule="evenodd" d="M9 3a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0V5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3v-3a1 1 0 1 1 2 0v4a1 1 0 0 1-1 1H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h3zm9.707 7.293a1 1 0 0 1 0 1.414l-4 4a1 1 0 0 1-1.414-1.414L16.586 12H10a1 1 0 1 1 0-2h6.586l-2.293-2.293a1 1 0 0 1 1.414-1.414l4 4z" clip-rule="evenodd"/>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Logout</span>
+            </a>
+        </li>
+    <?php } else { ?>
+        <!-- Logged Out Links -->
+        <li class="nav-item">
+            <a href="<?php bloginfo('url'); ?>/index.php/login/" target="_blank" class="nav-link d-flex align-items-center">
+                <span class="sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M15 13h-6v-2h6v-3l5 4-5 4v-3z"></path>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Sign In</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?php bloginfo('url'); ?>/index.php/register/" target="_blank" class="nav-link d-flex align-items-center">
+                <span class="sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <line x1="12" y1="13" x2="12" y2="19" stroke="currentColor" stroke-width="2"></line>
+                        <line x1="9" y1="16" x2="15" y2="16" stroke="currentColor" stroke-width="2"></line>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Register</span>
+            </a>
+        </li>
+    <?php } ?>
+</ul>
     </div>
 </nav>
     

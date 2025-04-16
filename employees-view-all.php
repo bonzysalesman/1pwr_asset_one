@@ -4,48 +4,42 @@ get_header();
 
 global $wpdb;
 
-// Pagination setup
-$records_per_page = 5;
-$current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-$offset = ($current_page - 1) * $records_per_page;
+// Enable error reporting for debugging (optional)
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
 
-// Search and filter setup
+// Search and filter setup (remains the same)
 $search_term = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
 $department_filter = isset($_GET['department']) ? sanitize_text_field($_GET['department']) : '';
 
-// Query for fetching departments for the filter dropdown
+// Query for fetching departments for the filter dropdown (remains the same)
 $departments = $wpdb->get_results("SELECT DISTINCT short_name FROM departments ORDER BY short_name ASC");
 
-// Base SQL query
-$sql = "SELECT e.employee_id AS employee_id, 
-               CONCAT(e.first_name, ' ', e.last_name) AS employee_name, 
-               e.email, 
-               e.phone, 
-               d.short_name AS department_name 
-        FROM employees e 
-        LEFT JOIN departments d ON e.department_id = d.department_id 
+// Base SQL query (pagination removed)
+$sql = "SELECT e.employee_id AS employee_id,
+               CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+               e.email,
+               e.phone,
+               d.short_name AS department_name
+        FROM employees e
+        LEFT JOIN departments d ON e.department_id = d.department_id
         WHERE 1=1";
 
-// Add search term condition
+// Add search term condition (remains the same)
 if (!empty($search_term)) {
     $sql .= $wpdb->prepare(" AND (CONCAT(e.first_name, ' ', e.last_name) LIKE %s OR e.email LIKE %s OR e.phone LIKE %s)", "%{$search_term}%", "%{$search_term}%", "%{$search_term}%");
 }
 
-// Add department filter condition
+// Add department filter condition (remains the same)
 if (!empty($department_filter)) {
     $sql .= $wpdb->prepare(" AND d.short_name = %s", $department_filter);
 }
 
-// Get total count for pagination
-$total_count_sql = "SELECT COUNT(*) FROM ({$sql}) AS subquery";
-$total_count = $wpdb->get_var($total_count_sql);
-
-// Add pagination
-$sql .= $wpdb->prepare(" ORDER BY e.first_name ASC LIMIT %d OFFSET %d", $records_per_page, $offset);
+// Order by employee name
+$sql .= " ORDER BY e.first_name ASC";
 $employees = $wpdb->get_results($sql);
 
-// Calculate total pages
-$total_pages = ceil($total_count / $records_per_page);
 ?>
 
 <div class="py-4">
@@ -77,7 +71,6 @@ $total_pages = ceil($total_count / $records_per_page);
 </div>
 
 <div class="card card-body border-0 shadow table-wrapper table-responsive">
-    <!-- Search and Filter Form -->
     <form method="GET" class="mb-4">
         <?php wp_nonce_field('employee_list'); ?>
         <div class="row">
@@ -100,8 +93,7 @@ $total_pages = ceil($total_count / $records_per_page);
         </div>
     </form>
 
-    <!-- Employee Table -->
-    <table class="table table-striped">
+    <table id="employees-table" class="table table-striped">
         <thead>
             <tr>
                 <th>#</th>
@@ -116,7 +108,7 @@ $total_pages = ceil($total_count / $records_per_page);
             <?php if (!empty($employees)): ?>
                 <?php foreach ($employees as $index => $employee): ?>
                     <tr>
-                        <td><?php echo esc_html(($offset + $index + 1)); ?></td>
+                        <td><?php echo esc_html(($index + 1)); ?></td>
                         <td><?php echo esc_html($employee->employee_name); ?></td>
                         <td><?php echo esc_html($employee->email); ?></td>
                         <td><?php echo esc_html($employee->phone); ?></td>
@@ -147,27 +139,17 @@ $total_pages = ceil($total_count / $records_per_page);
         </tbody>
     </table>
 
-    <!-- Pagination -->
-    <nav>
-        <ul class="pagination">
-            <?php if ($current_page > 1): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?php echo esc_url(add_query_arg(['paged' => $current_page - 1, 'search' => $search_term, 'department' => $department_filter])); ?>">Previous</a>
-                </li>
-            <?php endif; ?>
-            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                <li class="page-item <?php echo ($i === $current_page) ? 'active' : ''; ?>">
-                    <a class="page-link" href="<?php echo esc_url(add_query_arg(['paged' => $i, 'search' => $search_term, 'department' => $department_filter])); ?>"><?php echo $i; ?></a>
-                </li>
-            <?php endfor; ?>
-            <?php if ($current_page < $total_pages): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?php echo esc_url(add_query_arg(['paged' => $current_page + 1, 'search' => $search_term, 'department' => $department_filter])); ?>">Next</a>
-                </li>
-            <?php endif; ?>
-        </ul>
-    </nav>
+    </div>
 </div>
-</div>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    jQuery(document).ready( function () {
+        jQuery('#employees-table').DataTable();
+    } );
+</script>
 
 <?php get_footer(); ?>

@@ -20,6 +20,9 @@ h3 {
     font-size: 3rem;
     font-weight:800;
 }
+.small strong {
+    font-weight: 900;
+}
 #first_name, #last_name, #username, #display_name, #company, #phone, #website, #email, #bio, #visitors, #password, #confirm_password {
     border-color: rgb(209,213,219);
     border-radius: 10px;

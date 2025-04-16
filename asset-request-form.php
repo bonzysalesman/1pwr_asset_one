@@ -16,7 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $related_employee_id = isset($_POST['related_employee_id']) ? intval($_POST['related_employee_id']) : 0;
     $user_id = get_current_user_id();  // The logged-in user
     $request_date = current_time('mysql');
-    
+    $request_comments = isset($_POST['request_comments']) ? sanitize_textarea_field($_POST['request_comments']) : ''; // Get and sanitize comments
+
     // Insert the request into the database
     if ($asset_id > 0 && $related_employee_id > 0) {
         $wpdb->insert(
@@ -27,11 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'related_employee_id' => $related_employee_id,  // Add related employee ID
                 'request_date' => $request_date,
                 'status' => 'Pending',
+                'comments' => $request_comments, // Include the comments
             )
         );
-        //echo '<p>Request submitted successfully!</p>';
         echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
-            Request submitted successfully!            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            Request submitted successfully!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>';
     } else {
         echo '<p>Please select an asset and the employee for whom the request is being made.</p>';
@@ -57,6 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="<?php echo esc_attr($employee->employee_id); ?>"><?php echo esc_html($employee->employee_name); ?></option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <label for="request_comments" class="form-label">Comments (Optional)</label>
+                <textarea class="form-control" id="request_comments" name="request_comments" rows="3"></textarea>
             </div>
         </div>
         <div class="row">

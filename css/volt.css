@@ -20,6 +20,9 @@
 .datepicker {
     display: none;
 }
+.small strong {
+    font-weight: 900;
+}
 
 .datepicker.active {
     display: block;

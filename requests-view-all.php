@@ -15,13 +15,13 @@ error_reporting(E_ALL);
 $error_message = '';
 $success_message = '';
 
-// Function to handle request actions
+// Function to handle request actions (remains the same)
 function handle_request_action($action, $request_id) {
     global $wpdb, $error_message, $success_message;
 
     // Fetch the request details
     $request = $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM requests WHERE request_id = %d", 
+        "SELECT * FROM requests WHERE request_id = %d",
         $request_id
     ));
 
@@ -191,7 +191,7 @@ function handle_request_action($action, $request_id) {
     }
 }
 
-// Handle request actions
+// Handle request actions (remains the same)
 if (isset($_GET['approve'])) {
     $request_id = intval($_GET['approve']);
     handle_request_action('approve', $request_id);
@@ -203,23 +203,18 @@ if (isset($_GET['approve'])) {
     handle_request_action('return', $request_id);
 }
 
-// Pagination variables
-$items_per_page = 10;
-$current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-$offset = ($current_page - 1) * $items_per_page;
-
-// Filtering variables
+// Filtering variables (remains the same)
 $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
 
-// Fetch requests with pagination and filtering
+// Fetch all requests for DataTables
 try {
-    $query = "SELECT r.request_id, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, 
-              a.name AS asset_name, r.request_date, r.status, 
-              CONCAT(er.first_name, ' ', er.last_name) AS related_employee_name 
-              FROM requests r 
-              LEFT JOIN employees e ON r.user_id = e.employee_id 
-              LEFT JOIN assets a ON r.asset_id = a.asset_id 
-              LEFT JOIN employees er ON r.related_employee_id = er.employee_id 
+    $query = "SELECT r.request_id, CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+              a.name AS asset_name, r.request_date, r.status, r.comments,
+              CONCAT(er.first_name, ' ', er.last_name) AS related_employee_name
+              FROM requests r
+              LEFT JOIN employees e ON r.user_id = e.employee_id
+              LEFT JOIN assets a ON r.asset_id = a.asset_id
+              LEFT JOIN employees er ON r.related_employee_id = er.employee_id
               WHERE 1=1";
 
     // Apply status filter
@@ -227,22 +222,14 @@ try {
         $query .= $wpdb->prepare(" AND r.status = %s", $status_filter);
     }
 
-    // Order and limit for pagination
-    $query .= " ORDER BY r.request_date DESC LIMIT %d OFFSET %d";
-    $query = $wpdb->prepare($query, $items_per_page, $offset);
+    // Order by request date
+    $query .= " ORDER BY r.request_date DESC";
 
     $requests = $wpdb->get_results($query);
 
     if ($wpdb->last_error) {
         throw new Exception('Database query error: ' . $wpdb->last_error);
     }
-
-    // Count total requests for pagination
-    $count_query = "SELECT COUNT(*) FROM requests r WHERE 1=1";
-    if (!empty($status_filter)) {
-        $count_query .= $wpdb->prepare(" AND r.status = %s", $status_filter);
-    }
-    $total_requests = $wpdb->get_var($count_query);
 
 } catch (Exception $e) {
     $error_message = 'An error occurred while processing the request: ' . $e->getMessage();
@@ -265,7 +252,6 @@ try {
         </div>
     <?php endif; ?>
 
-    <!-- Filter Form -->
     <form method="get" class="mb-4">
         <div class="row g-3 align-items-center">
             <div class="col-auto">
@@ -288,7 +274,7 @@ try {
     </form>
 
     <?php if (!empty($requests)): ?>
-        <table class="table table-hover">
+        <table id="requests-table" class="table table-hover">
             <thead>
                 <tr>
                     <th>#</th>
@@ -297,6 +283,7 @@ try {
                     <th>Related Employee</th>
                     <th>Request Date</th>
                     <th>Status</th>
+                    <th>Comments</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -319,40 +306,41 @@ try {
                                 <span class=""><?php echo esc_html($request->status); ?></span>
                             <?php endif; ?>
                         </td>
+                        <td><?php echo esc_html($request->comments); ?></td>
                         <td>
                             <div class="btn-group">
-                                <a href="<?php echo esc_url(get_permalink(get_page_by_path('view-request')) . '?view=' . intval($request->request_id)); ?>" 
-                                class="btn btn-link text-dark p-0 me-2" title="View Request">
+                                <a href="<?php echo esc_url(get_permalink(get_page_by_path('view-request')) . '?view=' . intval($request->request_id)); ?>"
+                                   class="btn btn-link text-dark p-0 me-2" title="View Request">
                                     <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                                         <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
                                     </svg>
                                 </a>
-                                <a href="<?php echo esc_url(get_permalink(get_page_by_path('edit-request')) . '?request_id=' . intval($request->request_id)); ?>" 
-                                class="btn btn-link text-dark p-0 me-2" title="Edit Request">
+                                <a href="<?php echo esc_url(get_permalink(get_page_by_path('edit-request')) . '?request_id=' . intval($request->request_id)); ?>"
+                                   class="btn btn-link text-dark p-0 me-2" title="Edit Request">
                                     <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path>
                                         <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path>
                                     </svg>
                                 </a>
                                 <?php if ($request->status !== 'Approved' && $request->status !== 'Returned'): ?>
-                                <a href="<?php echo esc_url(add_query_arg('approve', intval($request->request_id))); ?>" class="btn btn-link text-success p-0 me-2" title="Approve Request">
-                                    <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </a>
-                                <a href="<?php echo esc_url(add_query_arg('reject', intval($request->request_id))); ?>" class="btn btn-link text-danger p-0 me-2" title="Reject Request">
-                                    <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </a>
+                                    <a href="<?php echo esc_url(add_query_arg('approve', intval($request->request_id))); ?>" class="btn btn-link text-success p-0 me-2" title="Approve Request">
+                                        <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </a>
+                                    <a href="<?php echo esc_url(add_query_arg('reject', intval($request->request_id))); ?>" class="btn btn-link text-danger p-0 me-2" title="Reject Request">
+                                        <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </a>
                                 <?php endif; ?>
                                 <?php if ($request->status == 'Approved'): ?>
-                                <a href="<?php echo esc_url(add_query_arg('return', intval($request->request_id))); ?>" class="btn btn-link text-warning p-0 me-2" title="Return Asset">
-                                    <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 100 2h2a1 1 0 100-2H9zM4 5a3 3 0 013-3h6a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V5zm3 7a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </a>
+                                    <a href="<?php echo esc_url(add_query_arg('return', intval($request->request_id))); ?>" class="btn btn-link text-warning p-0 me-2" title="Return Asset">
+                                        <svg class="icon icon-xs" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 100 2h2a1 1 0 100-2H9zM4 5a3 3 0 013-3h6a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V5zm3 7a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </a>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -361,34 +349,20 @@ try {
             </tbody>
         </table>
 
-        <!-- Pagination -->
-        <?php
-        $total_pages = ceil($total_requests / $items_per_page);
-        if ($total_pages > 1): ?>
-        <nav aria-label="Page navigation">
-            <ul class="pagination">
-                <?php if ($current_page > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="<?php echo esc_url(add_query_arg('paged', $current_page - 1)); ?>">Previous</a>
-                    </li>
-                <?php endif; ?>
-                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                    <li class="page-item <?php echo $i === $current_page ? 'active' : ''; ?>">
-                        <a class="page-link" href="<?php echo esc_url(add_query_arg('paged', $i)); ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
-                <?php if ($current_page < $total_pages): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="<?php echo esc_url(add_query_arg('paged', $current_page + 1)); ?>">Next</a>
-                    </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        <?php endif; ?>
     <?php else: ?>
         <p>No requests found.</p>
     <?php endif; ?>
 </div>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    jQuery(document).ready( function () {
+        jQuery('#requests-table').DataTable();
+    } );
+</script>
 
 <?php
 get_footer();

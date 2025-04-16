@@ -13,7 +13,23 @@ $asset_values = [
     'purchase_date' => '',
     'status' => 'Unallocated',
     'location' => '',
-    'category_id' => ''
+    'category_id' => '',
+    'serial_number' => '',
+    'warranty_expiry' => '',
+    'VersionHistory' => '',
+    'ConditionStatus' => '',
+    'PurchasePrice' => '',
+    'CurrentValue' => '',
+    'Manufacturer' => '',
+    'Model' => '',
+    'Comments' => '',
+    'AssignedTo' => '',
+    'Owner' => '',
+    'RetiredDate' => '',
+    'NewTagNumber' => '',
+    'OldTagNumber' => '',
+    'Quantity' => '',
+    'QuantityWrittenOff' => ''
 ];
 
 // Initialize error and success message variables
@@ -47,7 +63,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
             'purchase_date' => sanitize_text_field($_POST['purchase_date']),
             'status' => sanitize_text_field($_POST['asset_status']),
             'location' => sanitize_text_field($_POST['asset_location']),
-            'category_id' => intval($_POST['category_id'])
+            'category_id' => intval($_POST['category_id']),
+            'serial_number' => sanitize_text_field($_POST['serial_number']),
+            'warranty_expiry' => sanitize_text_field($_POST['warranty_expiry']),
+            'VersionHistory' => sanitize_text_field($_POST['VersionHistory']),
+            'ConditionStatus' => sanitize_text_field($_POST['ConditionStatus']),
+            'PurchasePrice' => sanitize_text_field($_POST['PurchasePrice']),
+            'CurrentValue' => sanitize_text_field($_POST['CurrentValue']),
+            'Manufacturer' => sanitize_text_field($_POST['Manufacturer']),
+            'Model' => sanitize_text_field($_POST['Model']),
+            'Comments' => sanitize_textarea_field($_POST['Comments']),
+            'AssignedTo' => sanitize_text_field($_POST['AssignedTo']),
+            'Owner' => sanitize_text_field($_POST['Owner']),
+            'RetiredDate' => sanitize_text_field($_POST['RetiredDate']),
+            'NewTagNumber' => sanitize_text_field($_POST['NewTagNumber']),
+            'OldTagNumber' => sanitize_text_field($_POST['OldTagNumber']),
+            'Quantity' => sanitize_text_field($_POST['Quantity']),
+            'QuantityWrittenOff' => sanitize_text_field($_POST['QuantityWrittenOff'])
         ];
 
         // Update asset in the database
@@ -55,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
             "assets",  // Table name
             $asset_values,
             ['asset_id' => $asset_id],
-            ['%s', '%s', '%s', '%s', '%s', '%d'],  // Data format
+            ['%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d'],  // Data format (using %f for decimal)
             ['%d']
         );
 
@@ -76,7 +108,7 @@ $categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER
 <div class="card card-body border-0 shadow mb-4">
     <div class="d-flex justify-content-between">
         <h2 class="h5 mb-4">Edit Asset</h2>
-        <a href="<?php echo esc_url(get_permalink(get_page_by_path('asset-history')) . '?asset_id=' . $asset_id); ?>" 
+        <a href="<?php echo esc_url(get_permalink(get_page_by_path('asset-history')) . '?asset_id=' . $asset_id); ?>"
            class="btn btn-sm btn-gray-800">
             <svg class="icon icon-xs me-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
@@ -128,12 +160,18 @@ $categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER
             <div class="col-md-12 mb-3">
                 <div>
                     <label for="asset_description">Description</label>
-                    <textarea class="form-control" id="asset_description" name="asset_description" rows="4"><?php echo esc_textarea($asset_values['description']); ?></textarea>
+                    <textarea class="form-control" id="asset_description" name="asset_description" rows="2"><?php echo esc_textarea($asset_values['description']); ?></textarea>
                 </div>
             </div>
         </div>
 
         <div class="row">
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="serial_number">Serial Number</label>
+                    <input class="form-control" type="text" id="serial_number" name="serial_number" value="<?php echo esc_attr($asset_values['serial_number']); ?>" />
+                </div>
+            </div>
             <div class="col-md-4 mb-3">
                 <div>
                     <label for="purchase_date">Purchase Date</label>
@@ -142,20 +180,131 @@ $categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER
             </div>
             <div class="col-md-4 mb-3">
                 <div>
+                    <label for="warranty_expiry">Warranty Expiry</label>
+                    <input class="form-control" type="date" id="warranty_expiry" name="warranty_expiry" value="<?php echo esc_attr($asset_values['warranty_expiry']); ?>" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="VersionHistory">Version History</label>
+                    <input class="form-control" type="text" id="VersionHistory" name="VersionHistory" value="<?php echo esc_attr($asset_values['VersionHistory']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="ConditionStatus">Condition Status</label>
+                    <input class="form-control" type="text" id="ConditionStatus" name="ConditionStatus" value="<?php echo esc_attr($asset_values['ConditionStatus']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
                     <label for="asset_status">Status</label>
-                    <!-- Disabled Select Field, User Cannot Modify -->
                     <select class="form-select" id="asset_status" name="asset_status" disabled>
                         <option value="Unallocated" <?php selected($asset_values['status'], 'Unallocated'); ?>>Unallocated</option>
                         <option value="Allocated" <?php selected($asset_values['status'], 'Allocated'); ?>>Allocated</option>
+                        <option value="missing" <?php selected($asset_values['status'], 'missing'); ?>>Missing</option>
+                        <option value="available" <?php selected($asset_values['status'], 'available'); ?>>Available</option>
+                        <option value="written off" <?php selected($asset_values['status'], 'written off'); ?>>Written Off</option>
+                        <option value="checked out" <?php selected($asset_values['status'], 'checked out'); ?>>Checked Out</option>
+                        <option value="write-off" <?php selected($asset_values['status'], 'write-off'); ?>>Write-off</option>
                     </select>
-                    <!-- Hidden Input to Submit the Value -->
                     <input type="hidden" name="asset_status" value="<?php echo esc_attr($asset_values['status']); ?>" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="PurchasePrice">Purchase Price</label>
+                    <input class="form-control" type="number" step="0.01" id="PurchasePrice" name="PurchasePrice" value="<?php echo esc_attr($asset_values['PurchasePrice']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="CurrentValue">Current Value</label>
+                    <input class="form-control" type="number" step="0.01" id="CurrentValue" name="CurrentValue" value="<?php echo esc_attr($asset_values['CurrentValue']); ?>" />
                 </div>
             </div>
             <div class="col-md-4 mb-3">
                 <div>
                     <label for="asset_location">Location</label>
                     <input class="form-control" type="text" id="asset_location" name="asset_location" value="<?php echo esc_attr($asset_values['location']); ?>" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="Manufacturer">Manufacturer</label>
+                    <input class="form-control" type="text" id="Manufacturer" name="Manufacturer" value="<?php echo esc_attr($asset_values['Manufacturer']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="Model">Model</label>
+                    <input class="form-control" type="text" id="Model" name="Model" value="<?php echo esc_attr($asset_values['Model']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="AssignedTo">Assigned To</label>
+                    <input class="form-control" type="text" id="AssignedTo" name="AssignedTo" value="<?php echo esc_attr($asset_values['AssignedTo']); ?>" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="Owner">Owner</label>
+                    <input class="form-control" type="text" id="Owner" name="Owner" value="<?php echo esc_attr($asset_values['Owner']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="RetiredDate">Retired Date</label>
+                    <input class="form-control" type="date" id="RetiredDate" name="RetiredDate" value="<?php echo esc_attr($asset_values['RetiredDate']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="NewTagNumber">New Tag Number</label>
+                    <input class="form-control" type="text" id="NewTagNumber" name="NewTagNumber" value="<?php echo esc_attr($asset_values['NewTagNumber']); ?>" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="OldTagNumber">Old Tag Number</label>
+                    <input class="form-control" type="text" id="OldTagNumber" name="OldTagNumber" value="<?php echo esc_attr($asset_values['OldTagNumber']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="Quantity">Quantity</label>
+                    <input class="form-control" type="number" id="Quantity" name="Quantity" value="<?php echo esc_attr($asset_values['Quantity']); ?>" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div>
+                    <label for="QuantityWrittenOff">Quantity Written Off</label>
+                    <input class="form-control" type="number" id="QuantityWrittenOff" name="QuantityWrittenOff" value="<?php echo esc_attr($asset_values['QuantityWrittenOff']); ?>" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <div>
+                    <label for="Comments">Comments</label>
+                    <textarea class="form-control" id="Comments" name="Comments" rows="2"><?php echo esc_textarea($asset_values['Comments']); ?></textarea>
                 </div>
             </div>
         </div>
