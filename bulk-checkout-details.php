@@ -102,8 +102,8 @@ if ($bulk_checkout_id > 0) {
         <?php
         if (isset($_GET['generate_packing_list']) && $_GET['generate_packing_list'] === 'true' && isset($_GET['generate_pdf']) && $_GET['generate_pdf'] === 'true' && $bulk_checkout) {
             // Start PDF generation
-            require_once(ABSPATH . 'wp-content/plugins/your-plugin-name/includes/tcpdf/tcpdf.php'); // Adjust path to your TCPDF library
-
+            require_once(ABSPATH . 'wp-content/themes/1pwr_asset_one/vendor/TCPDF/tcpdf.php'); // Adjust path to your TCPDF library
+            
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
             $pdf->SetCreator(PDF_CREATOR);
