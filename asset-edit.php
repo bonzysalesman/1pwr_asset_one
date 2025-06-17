@@ -14,6 +14,8 @@ $asset_values = [
     'status' => 'Unallocated',
     'location' => '',
     'category_id' => '',
+    'primary_category_code' => '',
+    'secondary_category_code' => '',
     'serial_number' => '',
     'warranty_expiry' => '',
     'VersionHistory' => '',
@@ -54,16 +56,63 @@ if ($asset_id > 0) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
+    // Fetch asset from database
+    $asset = $wpdb->get_row($wpdb->prepare("SELECT * FROM assets WHERE asset_id = %d", $asset_id));
+    
+    if ($asset) {
+        // Set values from database
+        $asset_values = [
+            'name' => $asset->name,
+            'description' => $asset->description,
+            'purchase_date' => $asset->purchase_date,
+            'status' => $asset->status,
+            'location' => $asset->location,
+            'category_id' => $asset->category_id,
+            'primary_category_code' => $asset->primary_category_code,
+            'secondary_category_code' => $asset->secondary_category_code,
+            'serial_number' => $asset->serial_number,
+            'warranty_expiry' => $asset->warranty_expiry,
+            'VersionHistory' => $asset->VersionHistory,
+            'ConditionStatus' => $asset->ConditionStatus,
+            'PurchasePrice' => $asset->PurchasePrice,
+            'CurrentValue' => $asset->CurrentValue,
+            'Manufacturer' => $asset->Manufacturer,
+            'Model' => $asset->Model,
+            'Comments' => $asset->Comments,
+            'AssignedTo' => $asset->AssignedTo,
+            'Owner' => $asset->Owner,
+            'RetiredDate' => $asset->RetiredDate,
+            'NewTagNumber' => $asset->NewTagNumber,
+            'OldTagNumber' => $asset->OldTagNumber,
+            'Quantity' => $asset->Quantity,
+            'QuantityWrittenOff' => $asset->QuantityWrittenOff
+        ];
+    }
+
     // Verify nonce
     if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'save_asset')) {
         // Sanitize input data
+        $category_code = isset($_POST['category_id']) ? sanitize_text_field($_POST['category_id']) : '';
+        $category_id_legacy = isset($_POST['category_id_legacy']) ? intval($_POST['category_id_legacy']) : 0;
+        
+        // Get primary code from the selected secondary code
+        $primary_code = '';
+        if (!empty($category_code)) {
+            $primary_code = $wpdb->get_var($wpdb->prepare(
+                "SELECT primary_category_code FROM pwr_secondary_categories WHERE category_code = %s LIMIT 1",
+                $category_code
+            ));
+        }
+        
         $asset_values = [
             'name' => sanitize_text_field($_POST['asset_name']),
             'description' => sanitize_textarea_field($_POST['asset_description']),
             'purchase_date' => sanitize_text_field($_POST['purchase_date']),
             'status' => sanitize_text_field($_POST['asset_status']),
             'location' => sanitize_text_field($_POST['asset_location']),
-            'category_id' => intval($_POST['category_id']),
+            'category_id' => $category_id_legacy,
+            'primary_category_code' => $primary_code,
+            'secondary_category_code' => $category_code,
             'serial_number' => sanitize_text_field($_POST['serial_number']),
             'warranty_expiry' => sanitize_text_field($_POST['warranty_expiry']),
             'VersionHistory' => sanitize_text_field($_POST['VersionHistory']),
@@ -87,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
             "assets",  // Table name
             $asset_values,
             ['asset_id' => $asset_id],
-            ['%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d'],  // Data format (using %f for decimal)
+            ['%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d'],
             ['%d']
         );
 
@@ -102,7 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
 }
 
 // Fetch categories for the dropdown
-$categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER BY name ASC");
+$primary_categories = $wpdb->get_results("SELECT category_code, category_name FROM pwr_asset_primary_categories WHERE active_status = 1 ORDER BY category_name ASC");
+
 ?>
 
 <div class="card card-body border-0 shadow mb-4">
@@ -138,20 +188,85 @@ $categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER
             <div class="col-md-6 mb-3">
                 <div>
                     <label for="asset_name">Asset Name <span class="text-danger">*</span></label>
-                    <input class="form-control" type="text" id="asset_name" name="asset_name" value="<?php echo esc_attr($asset_values['name']); ?>" required />
+                    <input class="form-control" type="text" id="asset_name" name="asset_name" value="<?php echo esc_attr($asset_values['name'] ?? ''); ?>" required />
                 </div>
             </div>
             <div class="col-md-6 mb-3">
                 <div>
-                    <label for="category_id">Category</label>
+                    <label for="category_id" class="form-label">Category</label>
+                    
+                    <?php
+                    // First try to get category from the new category system
+                    $current_category_display = '';
+                    
+                    if (!empty($asset_values['secondary_category_code'])) {
+                        $current_category = $wpdb->get_row($wpdb->prepare(
+                            "SELECT c.category_name as secondary_name, p.category_name as primary_name
+                             FROM pwr_secondary_categories c
+                             JOIN pwr_asset_primary_categories p ON c.primary_category_code = p.category_code
+                             WHERE c.category_code = %s LIMIT 1",
+                            $asset_values['secondary_category_code']
+                        ));
+                        
+                        if ($current_category) {
+                            $current_category_display = $current_category->primary_name . ' - ' . $current_category->secondary_name;
+                        }
+                    }
+                    
+                    // If not found in new system, try the old category system
+                    if (empty($current_category_display) && !empty($asset_values['category_id'])) {
+                        $old_category = $wpdb->get_var($wpdb->prepare(
+                            "SELECT name FROM categories WHERE category_id = %d LIMIT 1",
+                            $asset_values['category_id']
+                        ));
+                        
+                        if ($old_category) {
+                            $current_category_display = $old_category . ' <span class="text-muted">(Legacy category)</span>';
+                        }
+                    }
+                    
+                    // Display the current category if we found one
+                    if (!empty($current_category_display)) :
+                    ?>
+                    <div class="mb-2">
+                        <small class="text-muted">Current category:</small>
+                        <div class="current-category p-2 border rounded bg-light">
+                            <strong><?php echo wp_kses_post($current_category_display); ?></strong>
+                        </div>
+                    </div>
+                    <?php endif;
+                    ?>
+                    
                     <select class="form-select" id="category_id" name="category_id">
                         <option value="">Select Category</option>
-                        <?php foreach ($categories as $category) : ?>
-                            <option value="<?php echo esc_attr($category->category_id); ?>" <?php selected($asset_values['category_id'], $category->category_id); ?>>
-                                <?php echo esc_html($category->name); ?>
+                        <?php 
+                        // Get all categories from database - add debug info
+                        $query = "SELECT c.category_code, CONCAT(p.category_name, ' - ', c.category_name) AS full_name 
+                             FROM pwr_secondary_categories c
+                             JOIN pwr_asset_primary_categories p ON c.primary_category_code = p.category_code
+                             WHERE c.active_status = 1 AND p.active_status = 1
+                             ORDER BY p.category_name, c.category_name ASC";
+                             
+                        // Debug info
+                        echo '<!-- Query: ' . esc_html($query) . ' -->';
+                        
+                        $all_categories = $wpdb->get_results($query);
+                        
+                        // Debug count
+                        echo '<!-- Found ' . count($all_categories) . ' categories -->';
+                        
+                        // Debug the current value
+                        $current_secondary_code = $asset_values['secondary_category_code'] ?? '';
+                        
+                        foreach ($all_categories as $category) : ?>
+                            <option value="<?php echo esc_attr($category->category_code); ?>" <?php selected($current_secondary_code, $category->category_code); ?>>
+                                <?php echo esc_html($category->full_name); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    
+                    <!-- Hidden field to maintain backward compatibility -->
+                    <input type="hidden" id="category_id_legacy" name="category_id_legacy" value="<?php echo esc_attr($asset_values['category_id'] ?? ''); ?>">
                 </div>
             </div>
         </div>
@@ -232,7 +347,50 @@ $categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER
             <div class="col-md-4 mb-3">
                 <div>
                     <label for="asset_location">Location</label>
-                    <input class="form-control" type="text" id="asset_location" name="asset_location" value="<?php echo esc_attr($asset_values['location']); ?>" />
+                    <?php if (!empty($asset_values['location'])): ?>
+                        <div class="mb-2">
+                            <small class="text-muted">Current location:</small>
+                            <div class="current-location p-2 border rounded bg-light">
+                            <?php
+                                $current_location_name = '';
+                                $current_location = $wpdb->get_row($wpdb->prepare(
+                                    "SELECT location_name FROM locations WHERE location_code = %s",
+                                    $asset_values['location']
+                                ));
+                                if ($current_location) {
+                                    $current_location_name = $current_location->location_name;
+                                    echo '<strong>' . esc_html($asset_values['location']) . '</strong> - ' . esc_html($current_location_name);
+                                } else {
+                                    echo '<strong>' . esc_html($asset_values['location']) . '</strong> <span class="text-danger">(Non-standard location)</span>';
+                                }
+                            ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <select class="form-select location-select" id="asset_location" name="asset_location">
+                        <option value="">Select a location</option>
+                        <?php
+                        $locations = $wpdb->get_results("SELECT location_id, location_code, location_name FROM locations WHERE active_status = 1 ORDER BY location_code ASC");
+                        $found_current_location = false;
+                        if (!empty($asset_values['location'])) {
+                            foreach ($locations as $location) {
+                                if ($location->location_code === $asset_values['location']) {
+                                    $found_current_location = true;
+                                    break;
+                                }
+                            }
+                            if (!$found_current_location) {
+                                echo '<option value="' . esc_attr($asset_values['location']) . '" selected>' .
+                                    esc_html($asset_values['location']) . ' (Non-standard location)</option>';
+                            }
+                        }
+                        foreach ($locations as $location) {
+                            echo '<option value="' . esc_attr($location->location_code) . '" ' .
+                                selected($asset_values['location'], $location->location_code, false) .
+                                '>' . esc_html($location->location_code . ' - ' . $location->location_name) . '</option>';
+                        }
+                        ?>
+                    </select>
                 </div>
             </div>
         </div>
@@ -321,6 +479,26 @@ $categories = $wpdb->get_results("SELECT category_id, name FROM categories ORDER
     </form>
 </div>
 
-<?php
-get_footer();
-?>
+<!-- Add Select2 CSS and JS from CDN -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+jQuery(document).ready(function($) {
+    // Initialize Select2 for the location dropdown
+    $('#asset_location').select2({
+        placeholder: "Search for a location",
+        allowClear: true,
+        width: '100%'
+    });
+    
+    // Initialize Select2 for the category dropdown for better UX
+    $('#category_id').select2({
+        placeholder: "Search for a category",
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+
+<?php get_footer(); ?>

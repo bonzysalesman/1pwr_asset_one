@@ -200,6 +200,11 @@
                         <span class="sidebar-text">Categories</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php bloginfo('url');?>/index.php/manage-locations/">
+                        <span class="sidebar-text">Locations</span>
+                    </a>
+                </li>
             </ul>
         </div>
     </li>

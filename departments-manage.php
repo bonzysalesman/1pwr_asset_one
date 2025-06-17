@@ -9,7 +9,18 @@ global $wpdb;
 // Initialize default values
 $department_values = [
     'department_id' => '',
-    'short_name' => ''
+    'short_name' => '',
+    'department_name' => '',
+    'manager_id' => '',
+    'notes' => '',
+    'created_at' => '',
+    'updated_at' => '',
+    'image' => '',
+    'phone' => '',
+    'email' => '',
+    'location' => '',
+    'active_status' => 1,
+    'organization_id' => ''
 ];
 
 // Handle form submissions (both save and delete)
@@ -38,7 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Reset form after successful delete
                     $department_values = [
                         'department_id' => '',
-                        'short_name' => ''
+                        'short_name' => '',
+                        'department_name' => '',
+                        'manager_id' => '',
+                        'notes' => '',
+                        'created_at' => '',
+                        'updated_at' => '',
+                        'image' => '',
+                        'phone' => '',
+                        'email' => '',
+                        'location' => '',
+                        'active_status' => 1,
+                        'organization_id' => ''
                     ];
                 } else {
                     $error = 'Error deleting department: ' . $wpdb->last_error;
@@ -47,7 +69,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($_POST['save_department'])) {
             // Sanitize input data
             $department_values = [
-                'short_name' => sanitize_text_field($_POST['department_name'])
+                'short_name' => sanitize_text_field($_POST['short_name']),
+                'department_name' => sanitize_text_field($_POST['department_name']),
+                'manager_id' => intval($_POST['manager_id']),
+                'notes' => sanitize_textarea_field($_POST['notes']),
+                'image' => sanitize_text_field($_POST['image']),
+                'phone' => sanitize_text_field($_POST['phone']),
+                'email' => sanitize_email($_POST['email']),
+                'location' => sanitize_text_field($_POST['location']),
+                'active_status' => intval($_POST['active_status']),
+                'organization_id' => intval($_POST['organization_id'])
             ];
 
             // Check if editing an existing department
@@ -57,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'departments',
                     $department_values,
                     ['department_id' => intval($_POST['department_id'])],
-                    ['%s'],
+                    ['%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d'],
                     ['%d']
                 );
 
@@ -72,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = $wpdb->insert(
                     'departments',
                     $department_values,
-                    ['%s']
+                    ['%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d']
                 );
 
                 if ($result) {
@@ -80,7 +111,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Reset form after successful insert
                     $department_values = [
                         'department_id' => '',
-                        'short_name' => ''
+                        'short_name' => '',
+                        'department_name' => '',
+                        'manager_id' => '',
+                        'notes' => '',
+                        'created_at' => '',
+                        'updated_at' => '',
+                        'image' => '',
+                        'phone' => '',
+                        'email' => '',
+                        'location' => '',
+                        'active_status' => 1,
+                        'organization_id' => ''
                     ];
                 } else {
                     $error = 'Error adding department: ' . $wpdb->last_error;
@@ -101,7 +143,18 @@ if (isset($_GET['department_id'])) {
     if ($department) {
         $department_values = [
             'department_id' => $department->department_id,
-            'short_name' => $department->short_name
+            'short_name' => $department->short_name,
+            'department_name' => $department->department_name,
+            'manager_id' => $department->manager_id,
+            'notes' => $department->notes,
+            'created_at' => $department->created_at,
+            'updated_at' => $department->updated_at,
+            'image' => $department->image,
+            'phone' => $department->phone,
+            'email' => $department->email,
+            'location' => $department->location,
+            'active_status' => $department->active_status,
+            'organization_id' => $department->organization_id
         ];
     }
 }
@@ -135,8 +188,62 @@ $departments = $wpdb->get_results("
     <form method="post">
         <?php wp_nonce_field('save_department'); ?>
         <div class="mb-3">
+            <label for="short_name" class="form-label">Short Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="short_name" name="short_name" value="<?php echo esc_attr($department_values['short_name']); ?>" required>
+        </div>
+        <div class="mb-3">
             <label for="department_name" class="form-label">Department Name <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="department_name" name="department_name" value="<?php echo esc_attr($department_values['short_name']); ?>" required>
+            <input type="text" class="form-control" id="department_name" name="department_name" value="<?php echo esc_attr($department_values['department_name']); ?>" required>
+        </div>
+        <div class="mb-3">
+            <label for="manager_id" class="form-label">Manager ID</label>
+            <input type="number" class="form-control" id="manager_id" name="manager_id" value="<?php echo esc_attr($department_values['manager_id']); ?>">
+        </div>
+        <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control" id="notes" name="notes"><?php echo esc_textarea($department_values['notes']); ?></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="image" class="form-label">Image</label>
+            <input type="text" class="form-control" id="image" name="image" value="<?php echo esc_attr($department_values['image']); ?>">
+        </div>
+        <div class="mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input type="text" class="form-control" id="phone" name="phone" value="<?php echo esc_attr($department_values['phone']); ?>">
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="<?php echo esc_attr($department_values['email']); ?>">
+        </div>
+        <div class="mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="location" name="location" value="<?php echo esc_attr($department_values['location']); ?>">
+        </div>
+        <div class="mb-3">
+            <label for="active_status" class="form-label">Active Status</label>
+            <select class="form-control" id="active_status" name="active_status">
+                <option value="1" <?php selected($department_values['active_status'], 1); ?>>Active</option>
+                <option value="0" <?php selected($department_values['active_status'], 0); ?>>Inactive</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="organization_id">Organisation ID</label>
+            <select class="form-control" id="organization_id" name="organization_id">
+                <?php
+                $organisations = [
+                    (object) ['id' => 1, 'name' => 'SMP', 'short_name' => NULL, 'active_status' => 1, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05'],
+                    (object) ['id' => 2, 'name' => '1PWR LESOTHO', 'short_name' => NULL, 'active_status' => 1, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05'],
+                    (object) ['id' => 3, 'name' => 'PUECO LESOTHO', 'short_name' => NULL, 'active_status' => 1, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05'],
+                    (object) ['id' => 4, 'name' => 'NEO1', 'short_name' => NULL, 'active_status' => 1, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05'],
+                    (object) ['id' => 5, 'name' => '1PWR BENIN', 'short_name' => NULL, 'active_status' => 1, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05'],
+                    (object) ['id' => 6, 'name' => '1PWR ZAMBIA', 'short_name' => NULL, 'active_status' => 0, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05'],
+                    (object) ['id' => 7, 'name' => 'PUECO BENIN', 'short_name' => NULL, 'active_status' => 0, 'created_at' => '2025-05-06 13:01:05', 'updated_at' => '2025-05-06 13:01:05']
+                ];
+                ?>
+                <?php foreach ($organisations as $organisation): ?>
+                    <option value="<?php echo esc_attr($organisation->id); ?>" <?php selected($department_values['organization_id'], $organisation->id); ?>><?php echo esc_html($organisation->name); ?></option>
+                <?php endforeach; ?>
+            </select>
         </div>
         <button type="submit" name="save_department" class="btn btn-primary">
             <?php echo isset($department_values['department_id']) && !empty($department_values['department_id']) ? 'Update Department' : 'Add Department'; ?>
@@ -232,4 +339,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php
 get_footer();
-?>

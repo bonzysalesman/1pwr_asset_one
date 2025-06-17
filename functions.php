@@ -374,16 +374,23 @@ function process_bulk_checkout_form() {
     if (isset($_POST['action']) && $_POST['action'] === 'process_bulk_checkout') {
         global $wpdb;
 
-        // Sanitize input data
-        $selected_asset_ids_str = sanitize_text_field($_POST['bulk_checkout_assets']);
-        error_log("Selected Asset IDs (raw): " . $selected_asset_ids_str); // Debug line
-        $selected_asset_ids = json_decode($selected_asset_ids_str, true);
-        error_log("Selected Asset IDs (parsed): " . print_r($selected_asset_ids, true)); // Debug line
+        // Decode line items JSON string
+        if (isset($_POST['line_items'])) {
+            $line_items = json_decode(stripslashes($_POST['line_items']), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                wp_die('Invalid line items format.');
+            }
+        } else {
+            wp_die('Line items are not defined or not in correct format.');
+        }
 
-        // Existing code...
-
-        if (!empty($selected_asset_ids)) {
-            // Existing code...
+        // Validate line items
+        if (!empty($line_items)) {
+            foreach ($line_items as $item) {
+                if (empty($item['description']) || $item['quantity'] <= 0) {
+                    wp_die('Invalid line item data.');
+                }
+            }
         } else {
             // No assets selected
             $redirect_url = add_query_arg('bulk_checkout_error', 'no_assets_selected', get_permalink(get_page_by_path('bulk-checkout'))); // Redirect back to the form
@@ -859,4 +866,363 @@ function fetch_receivers() {
     // Send JSON response
     wp_send_json($receivers);
 }
+// Add action hooks for logged-in and non-logged-in users
+add_action('admin_post_submit_new_purchase_request', 'handle_new_purchase_request');
+add_action('admin_post_nopriv_submit_new_purchase_request', 'handle_new_purchase_request');
+
+function handle_new_purchase_request() {
+    if (!isset($_POST['new_pr_nonce']) || !wp_verify_nonce($_POST['new_pr_nonce'], 'new-pr-nonce')) {
+        wp_die('Security check failed.');
+    }
+    
+    global $wpdb;
+    $user_id = get_current_user_id();
+    $organization_id = isset($_POST['organization_id']) ? intval($_POST['organization_id']) : 0;
+    $department_id = isset($_POST['department_id']) ? intval($_POST['department_id']) : 0;
+    $site = isset($_POST['site']) ? sanitize_text_field($_POST['site']) : '';
+    $expense_type = isset($_POST['expense_type']) ? sanitize_text_field($_POST['expense_type']) : '';
+    $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+    $estimated_amount = isset($_POST['estimated_amount']) ? floatval($_POST['estimated_amount']) : 0;
+    $currency = isset($_POST['currency']) ? sanitize_text_field($_POST['currency']) : '';
+    $urgency_level = isset($_POST['urgency_level']) ? sanitize_text_field($_POST['urgency_level']) : '';
+    
+    // Log line items for debugging
+    error_log(print_r($_POST['line_items'], true));
+
+    // Decode line items JSON string
+    if (isset($_POST['line_items'])) {
+        $line_items = json_decode(stripslashes($_POST['line_items']), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_die('Invalid line items format.');
+        }
+    } else {
+        wp_die('Line items are not defined or not in correct format.');
+    }
+
+    // Validate line items
+    if (!empty($line_items)) {
+        foreach ($line_items as $item) {
+            if (empty($item['description']) || $item['quantity'] <= 0) {
+                wp_die('Invalid line item data.');
+            }
+        }
+    } else {
+        wp_die('Line items are not defined or not in correct format.');
+    }
+    
+    // Capture and sanitize input fields
+    $requester = isset($_POST['requester']) ? sanitize_text_field($_POST['requester']) : '';
+    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+    $project_category = isset($_POST['project_category']) ? sanitize_text_field($_POST['project_category']) : '';
+    $preferred_vendor = isset($_POST['preferred_vendor']) ? sanitize_text_field($_POST['preferred_vendor']) : '';
+    $approvers = isset($_POST['approvers']) ? sanitize_textarea_field($_POST['approvers']) : '';
+
+    // Insert purchase request
+    $result = $wpdb->insert(
+        'purchase_requests',
+        [
+            'user_id' => $user_id,
+            'organization_id' => $organization_id,
+            'department_id' => $department_id,
+            'site' => $site,
+            'expense_type' => $expense_type,
+            'description' => $description,
+            'estimated_amount' => $estimated_amount,
+            'currency' => $currency,
+            'urgency_level' => $urgency_level,
+            'requester' => $requester,
+            'email' => $email,
+            'project_category' => $project_category,
+            'preferred_vendor' => $preferred_vendor,
+            'approvers' => $approvers,
+            'status' => 'Submitted'
+        ],
+        ['%d', '%d', '%d', '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
+    );
+
+    if ($result) {
+        $pr_id = $wpdb->insert_id;
+        
+        // Insert line items
+        foreach ($line_items as $item) {
+            $wpdb->insert(
+                'line_items',
+                [
+                    'pr_id' => $pr_id,
+                    'description' => sanitize_text_field($item['description']),
+                    'quantity' => intval($item['quantity']),
+                    'uom' => sanitize_text_field($item['uom']),
+                    'notes' => sanitize_textarea_field($item['notes']),
+                    'attachment' => sanitize_text_field($item['attachment'] ?? '')
+                ],
+                ['%d', '%s', '%d', '%s', '%s', '%s']
+            );
+            if ($wpdb->last_error) {
+                error_log($wpdb->last_error);
+            }
+        }
+        
+        wp_redirect(add_query_arg('success', '1', wp_get_referer()));
+    } else {
+        wp_redirect(add_query_arg('error', '1', wp_get_referer()));
+    }
+    exit;
+}
+
+// ... (rest of the code remains the same)
+
+add_action('wp_ajax_get_departments', 'get_departments');
+add_action('wp_ajax_nopriv_get_departments', 'get_departments');
+
+function get_departments() {
+    // Function implementation would go here
+    $departments = []; // This should be populated with actual data
+    wp_send_json($departments);
+}
+
+// AJAX handler for fetching child locations
+add_action('wp_ajax_get_child_locations', 'ajax_get_child_locations');
+add_action('wp_ajax_nopriv_get_child_locations', 'ajax_get_child_locations');
+
+function ajax_get_child_locations() {
+    // Check nonce for security
+    check_ajax_referer('location_hierarchy_nonce', 'security');
+    
+    // Get parent ID
+    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
+    
+    // Include location hierarchy functions if not already included
+    require_once(get_template_directory() . '/includes/location-hierarchy-functions.php');
+    
+    // Get child locations
+    $children = get_child_locations($parent_id);
+    
+    // Format response data
+    $response_data = array();
+    foreach ($children as $child) {
+        $response_data[] = array(
+            'id' => $child->location_id,
+            'code' => $child->location_code,
+            'name' => $child->location_name,
+            'has_children' => location_has_children($child->location_id)
+        );
+    }
+    
+    // Send response
+    wp_send_json_success(array(
+        'locations' => $response_data
+    ));
+}
+
+// AJAX handler for getting the location hierarchy from a location code
+add_action('wp_ajax_get_location_hierarchy', 'ajax_get_location_hierarchy');
+add_action('wp_ajax_nopriv_get_location_hierarchy', 'ajax_get_location_hierarchy');
+
+function ajax_get_location_hierarchy() {
+    // Check nonce for security
+    check_ajax_referer('location_hierarchy_nonce', 'security');
+    
+    // Get location code
+    $location_code = isset($_POST['location_code']) ? sanitize_text_field($_POST['location_code']) : '';
+    
+    if (empty($location_code)) {
+        wp_send_json_error(array('message' => 'Location code is required'));
+        return;
+    }
+    
+    // Include location hierarchy functions
+    require_once(get_template_directory() . '/includes/location-hierarchy-functions.php');
+    
+    global $wpdb;
+    
+    // Get the location by its code
+    $location = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}pwr_locations WHERE location_code = %s AND active_status = 1",
+        $location_code
+    ));
+    
+    if (!$location) {
+        wp_send_json_error(array('message' => 'Location not found'));
+        return;
+    }
+    
+    // Get the full ancestry path
+    $ancestry = get_location_ancestry($location);
+    
+    // Build the hierarchy response
+    $hierarchy = array(
+        'facility' => null,
+        'building' => null,
+        'floor' => null,
+        'zone' => null,
+        'section' => null,
+        'subsection' => null
+    );
+    
+    // Determine the level of each ancestor based on their position in the hierarchy
+    $level_keys = array_keys($hierarchy);
+    $total_levels = count($ancestry);
+    
+    // Map ancestors to their respective levels
+    for ($i = 0; $i < $total_levels && $i < count($level_keys); $i++) {
+        $ancestor = $ancestry[$i];
+        $level_key = $level_keys[$i];
+        
+        $hierarchy[$level_key] = array(
+            'id' => $ancestor->location_id,
+            'code' => $ancestor->location_code,
+            'name' => $ancestor->location_name
+        );
+    }
+    
+    // Send the response
+    wp_send_json_success(array(
+        'hierarchy' => $hierarchy
+    ));
+}
+
+// AJAX handler for getting parent location hierarchy
+add_action('wp_ajax_get_location_parent_hierarchy', 'ajax_get_location_parent_hierarchy');
+add_action('wp_ajax_nopriv_get_location_parent_hierarchy', 'ajax_get_location_parent_hierarchy');
+
+function ajax_get_location_parent_hierarchy() {
+    // Check nonce for security
+    check_ajax_referer('location_hierarchy_nonce', 'security');
+    
+    // Get location ID
+    $location_id = isset($_POST['location_id']) ? intval($_POST['location_id']) : 0;
+    
+    if ($location_id <= 0) {
+        wp_send_json_error(array('message' => 'Valid location ID is required'));
+        return;
+    }
+    
+    // Include location hierarchy functions
+    require_once(get_template_directory() . '/includes/location-hierarchy-functions.php');
+    
+    global $wpdb;
+    
+    // Get the location by its ID
+    $location = get_location_by_id($location_id);
+    
+    if (!$location) {
+        wp_send_json_error(array('message' => 'Location not found'));
+        return;
+    }
+    
+    // Get the full ancestry path including the location itself
+    $ancestry = get_location_ancestry($location);
+    
+    // Build the hierarchy response
+    $hierarchy = array(
+        'facility' => null,
+        'building' => null,
+        'floor' => null,
+        'zone' => null,
+        'section' => null,
+        'subsection' => null
+    );
+    
+    // Determine the level of each ancestor based on their position in the hierarchy
+    $level_keys = array_keys($hierarchy);
+    $total_levels = count($ancestry);
+    
+    // Map ancestors to their respective levels
+    for ($i = 0; $i < $total_levels && $i < count($level_keys); $i++) {
+        $ancestor = $ancestry[$i];
+        $level_key = $level_keys[$i];
+        
+        $hierarchy[$level_key] = array(
+            'id' => $ancestor->location_id,
+            'code' => $ancestor->location_code,
+            'name' => $ancestor->location_name
+        );
+    }
+    
+    // Send the response
+    wp_send_json_success(array(
+        'hierarchy' => $hierarchy
+    ));
+}
+
+/**
+ * Check if a location has children
+ * 
+ * @param int $location_id The location ID to check
+ * @return bool True if the location has children, false otherwise
+ */
+function location_has_children($location_id) {
+    global $wpdb;
+    
+    $count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) 
+        FROM {$wpdb->prefix}pwr_locations 
+        WHERE parent_location_id = %d 
+        AND active_status = 1",
+        $location_id
+    ));
+    
+    return $count > 0;
+}
+
+// We're now handling category script directly in asset-edit.php
+
+// AJAX handler for getting secondary categories
+add_action('wp_ajax_get_secondary_categories', 'ajax_get_secondary_categories');
+add_action('wp_ajax_nopriv_get_secondary_categories', 'ajax_get_secondary_categories');
+
+function ajax_get_secondary_categories() {
+    // Debug information
+    error_log('AJAX get_secondary_categories called');
+    
+    // Check nonce for security
+    check_ajax_referer('category_nonce', 'security');
+    
+    // Get primary category code from POST data
+    $primary_code = isset($_POST['primary_code']) ? sanitize_text_field($_POST['primary_code']) : '';
+    error_log('Primary category code received: ' . $primary_code);
+    
+    if (empty($primary_code)) {
+        wp_send_json_error('Primary category code is required');
+        return;
+    }
+    
+    global $wpdb;
+    
+    // Query to get secondary categories for the primary code
+    $secondary_categories = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT category_code, category_name, primary_category_code 
+            FROM {$wpdb->prefix}pwr_secondary_categories 
+            WHERE primary_category_code = %s 
+            ORDER BY category_name ASC",
+            $primary_code
+        ),
+        ARRAY_A
+    );
+    
+    error_log('Found ' . count($secondary_categories) . ' secondary categories for primary code: ' . $primary_code);
+    
+    // Return the results as JSON
+    wp_send_json_success($secondary_categories);
+}
+
+// Validate and sanitize input fields
+$organization = isset($_POST['organization']) ? sanitize_text_field($_POST['organization']) : '';
+$department = isset($_POST['department']) ? sanitize_text_field($_POST['department']) : '';
+$project_category = isset($_POST['project_category']) ? sanitize_text_field($_POST['project_category']) : '';
+$description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+$site = isset($_POST['site']) ? sanitize_text_field($_POST['site']) : '';
+$expense_type = isset($_POST['expense_type']) ? sanitize_text_field($_POST['expense_type']) : '';
+$required_date = isset($_POST['required_date']) ? sanitize_text_field($_POST['required_date']) : '';
+$estimated_amount = isset($_POST['estimated_amount']) ? floatval($_POST['estimated_amount']) : 0;
+$preferred_vendor = isset($_POST['preferred_vendor']) ? sanitize_text_field($_POST['preferred_vendor']) : '';
+$urgency_level = isset($_POST['urgency_level']) ? sanitize_text_field($_POST['urgency_level']) : '';
+$currency = isset($_POST['currency']) ? sanitize_text_field($_POST['currency']) : '';
+$approvers = isset($_POST['approvers']) ? sanitize_textarea_field($_POST['approvers']) : '';
+
+// Check for required fields
+//if (empty($organization) || empty($department) || empty($project_category) || empty($description) || empty($site) || empty($expense_type) || empty($required_date) || empty($estimated_amount) || empty($currency) || empty($approvers)) {
+ //   wp_die('Please fill in all required fields.');
+//}
 ?>

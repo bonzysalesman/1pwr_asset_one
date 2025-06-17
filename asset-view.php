@@ -12,11 +12,17 @@ global $wpdb;
 // Get asset ID from URL
 $asset_id = isset($_GET['asset_id']) ? intval($_GET['asset_id']) : 0;
 
-// Fetch asset details with category
+// Fetch asset details with both legacy and new category information
 $asset = $wpdb->get_row($wpdb->prepare("
-    SELECT a.*, c.name as category_name
+    SELECT a.*, c.name as category_name,
+           pc.category_name as primary_category_name,
+           pc.category_code as primary_category_code,
+           sc.category_name as secondary_category_name,
+           sc.category_code as secondary_category_code
     FROM assets a
     LEFT JOIN categories c ON a.category_id = c.category_id
+    LEFT JOIN {$wpdb->prefix}pwr_asset_primary_categories pc ON a.primary_category_code = pc.category_code
+    LEFT JOIN {$wpdb->prefix}pwr_asset_secondary_categories sc ON a.secondary_category_code = sc.category_code
     WHERE a.asset_id = %d
 ", $asset_id));
 
@@ -114,7 +120,23 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                     <div class="col-md-6 mb-3">
                         <div>
                             <label class="mb-1"><strong>Category</strong></label>
-                            <p class="mb-2"><?php echo esc_html($asset->category_name); ?></p>
+                            <?php if (!empty($asset->primary_category_name)): ?>
+                                <p class="mb-0">
+                                    <span class="badge bg-primary"><?php echo esc_html($asset->primary_category_code); ?></span>
+                                    <?php echo esc_html($asset->primary_category_name); ?>
+                                </p>
+                                <?php if (!empty($asset->secondary_category_name)): ?>
+                                    <p class="mb-2">
+                                        <span class="badge bg-secondary"><?php echo esc_html($asset->secondary_category_code); ?></span>
+                                        <?php echo esc_html($asset->secondary_category_name); ?>
+                                    </p>
+                                <?php else: ?>
+                                    <p class="mb-2"></p>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <!-- Display legacy category if new categories are not set -->
+                                <p class="mb-2"><?php echo esc_html($asset->category_name); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

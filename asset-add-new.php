@@ -14,6 +14,8 @@ $asset_values = [
     'status' => 'Unallocated',
     'location' => '',
     'category_id' => '',
+    'primary_category_code' => '',
+    'secondary_category_code' => '',
     'serial_number' => '',
     'warranty_expiry' => '',
     'VersionHistory' => '',
@@ -41,13 +43,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
     // Verify nonce
     if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'save_asset')) {
         // Sanitize input data
+        $category_code = isset($_POST['category_id']) ? sanitize_text_field($_POST['category_id']) : '';
+        $category_id_legacy = isset($_POST['category_id_legacy']) ? intval($_POST['category_id_legacy']) : 0;
+        
+        // Get primary code from the selected secondary code
+        $primary_code = '';
+        if (!empty($category_code)) {
+            $primary_code = $wpdb->get_var($wpdb->prepare(
+                "SELECT primary_category_code FROM pwr_secondary_categories WHERE category_code = %s LIMIT 1",
+                $category_code
+            ));
+        }
+        
         $asset_values = [
             'name' => sanitize_text_field($_POST['asset_name']),
             'description' => sanitize_textarea_field($_POST['asset_description']),
             'purchase_date' => sanitize_text_field($_POST['purchase_date']),
             'status' => sanitize_text_field($_POST['asset_status']),
             'location' => sanitize_text_field($_POST['asset_location']),
-            'category_id' => intval($_POST['category_id']),
+            'category_id' => $category_id_legacy,
+            'primary_category_code' => $primary_code,
+            'secondary_category_code' => $category_code,
             'serial_number' => sanitize_text_field($_POST['serial_number']),
             'warranty_expiry' => sanitize_text_field($_POST['warranty_expiry']),
             'VersionHistory' => sanitize_text_field($_POST['VersionHistory']),
@@ -159,8 +175,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_asset'])) {
     }
 }
 
-// Fetch categories for dropdown
-$categories = $wpdb->get_results("SELECT category_id, name FROM categories");
+// Get all categories from database - standardized categories
+$all_categories = $wpdb->get_results(
+    "SELECT c.category_code, CONCAT(p.category_name, ' - ', c.category_name) AS full_name 
+     FROM pwr_secondary_categories c
+     JOIN pwr_asset_primary_categories p ON c.primary_category_code = p.category_code
+     WHERE c.active_status = 1 AND p.active_status = 1
+     ORDER BY p.category_name, c.category_name ASC"
+);
 
 // If editing an existing asset, override default values
 if (isset($_GET['asset_id'])) {
@@ -214,15 +236,18 @@ if (isset($_GET['asset_id'])) {
             </div>
             <div class="col-md-6 mb-3">
                 <div>
-                    <label for="category_id">Category</label>
+                    <label for="category_id" class="form-label">Category</label>
                     <select class="form-select" id="category_id" name="category_id">
                         <option value="">Select Category</option>
-                        <?php foreach ($categories as $category) : ?>
-                            <option value="<?php echo esc_attr($category->category_id); ?>" <?php selected($asset_values['category_id'], $category->category_id); ?>>
-                                <?php echo esc_html($category->name); ?>
+                        <?php foreach ($all_categories as $category) : ?>
+                            <option value="<?php echo esc_attr($category->category_code); ?>" <?php selected($asset_values['secondary_category_code'], $category->category_code); ?>>
+                                <?php echo esc_html($category->full_name); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    
+                    <!-- Hidden field to maintain backward compatibility -->
+                    <input type="hidden" id="category_id_legacy" name="category_id_legacy" value="<?php echo esc_attr($asset_values['category_id']); ?>">
                 </div>
             </div>
         </div>
@@ -302,7 +327,19 @@ if (isset($_GET['asset_id'])) {
             <div class="col-md-4 mb-3">
                 <div>
                     <label for="asset_location">Location</label>
-                    <input class="form-control" type="text" id="asset_location" name="asset_location" value="<?php echo esc_attr($asset_values['location']); ?>" />
+                    <select class="form-select location-select" id="asset_location" name="asset_location">
+                        <option value="">Select a location</option>
+                        <?php
+                        // Get all active locations from the database
+                        $locations = $wpdb->get_results("SELECT location_id, location_code, location_name FROM locations WHERE active_status = 1 ORDER BY location_code ASC");
+                        
+                        foreach ($locations as $location) {
+                            echo '<option value="' . esc_attr($location->location_code) . '" ' . 
+                                selected($asset_values['location'], $location->location_code, false) . 
+                                '>' . esc_html($location->location_code . ' - ' . $location->location_name) . '</option>';
+                        }
+                        ?>
+                    </select>
                 </div>
             </div>
         </div>
@@ -394,3 +431,25 @@ if (isset($_GET['asset_id'])) {
 <?php
 get_footer();
 ?>
+
+<!-- Add Select2 CSS and JS from CDN -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+jQuery(document).ready(function($) {
+    // Initialize Select2 for the location dropdown
+    $('#asset_location').select2({
+        placeholder: "Search for a location",
+        allowClear: true,
+        width: '100%'
+    });
+    
+    // Initialize Select2 for the category dropdown for better UX
+    $('#category_id').select2({
+        placeholder: "Search for a category",
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>

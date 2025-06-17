@@ -13,10 +13,14 @@ $category_filter = isset($_GET['category']) ? intval($_GET['category']) : '';
 
 // Build the query
 $query = "SELECT a.*, c.name as category_name,
+          pc.category_name as primary_category_name,
+          sc.category_name as secondary_category_name,
           CASE WHEN al.status IS NULL THEN 'Unallocated' ELSE CONCAT(e.first_name, ' ', e.last_name) END as allocated_to,
           CASE WHEN al.status IS NULL THEN '' ELSE d.short_name END as department_name
           FROM assets a
           LEFT JOIN categories c ON a.category_id = c.category_id
+          LEFT JOIN {$wpdb->prefix}pwr_asset_primary_categories pc ON a.primary_category_code = pc.category_code
+          LEFT JOIN {$wpdb->prefix}pwr_asset_secondary_categories sc ON a.secondary_category_code = sc.category_code
           LEFT JOIN (
               SELECT al1.*
               FROM allocations al1
@@ -29,8 +33,13 @@ $query = "SELECT a.*, c.name as category_name,
 
 // Add search conditions
 if (!empty($search_term)) {
-    $search_condition = " AND (a.name LIKE %s OR a.description LIKE %s)";
-    $query .= $wpdb->prepare($search_condition, '%' . $search_term . '%', '%' . $search_term . '%');
+    $search_condition = " AND (a.name LIKE %s OR a.description LIKE %s OR pc.category_name LIKE %s OR sc.category_name LIKE %s)";
+    $query .= $wpdb->prepare($search_condition, 
+        '%' . $search_term . '%', 
+        '%' . $search_term . '%',
+        '%' . $search_term . '%',
+        '%' . $search_term . '%'
+    );
 }
 
 if (!empty($category_filter)) {
@@ -41,7 +50,7 @@ if (!empty($category_filter)) {
 // Add sorting
 $order_column = isset($_GET['order'][0]['column']) ? intval($_GET['order'][0]['column']) : 0;
 $order_dir = isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], ['asc', 'desc']) ? $_GET['order'][0]['dir'] : 'asc';
-$order_columns = ['a.name', 'category_name', 'status', 'allocated_to', 'department_name'];
+$order_columns = ['a.name', 'primary_category_name', 'secondary_category_name', 'status', 'allocated_to', 'department_name'];
 $order_by = isset($order_columns[$order_column]) ? $order_columns[$order_column] : 'a.name';
 $query .= " ORDER BY $order_by $order_dir";
 
@@ -63,9 +72,19 @@ $response = [
 ];
 
 foreach ($assets as $asset) {
+    // Build category display
+    $primary_category = !empty($asset->primary_category_name) ? esc_html($asset->primary_category_name) : 'Uncategorized';
+    $secondary_category = !empty($asset->secondary_category_name) ? esc_html($asset->secondary_category_name) : '';
+    
+    // Combine primary and secondary categories with a separator if both exist
+    $category_display = $primary_category;
+    if (!empty($secondary_category)) {
+        $category_display .= ' <span class="text-muted">›</span> ' . $secondary_category;
+    }
+    
     $response['data'][] = [
         esc_html($asset->name),
-        esc_html($asset->category_name),
+        $category_display,
         "<span class='badge bg-" . ($asset->status === 'Allocated' ? 'success' : 'warning') . "'>" . esc_html($asset->status) . "</span>",
         esc_html($asset->status === 'Unallocated' ? '' : $asset->allocated_to),
         esc_html($asset->status === 'Unallocated' ? '' : $asset->department_name),
