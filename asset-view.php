@@ -12,19 +12,23 @@ global $wpdb;
 // Get asset ID from URL
 $asset_id = isset($_GET['asset_id']) ? intval($_GET['asset_id']) : 0;
 
-// Fetch asset details with both legacy and new category information
-$asset = $wpdb->get_row($wpdb->prepare("
-    SELECT a.*, c.name as category_name,
-           pc.category_name as primary_category_name,
-           pc.category_code as primary_category_code,
-           sc.category_name as secondary_category_name,
-           sc.category_code as secondary_category_code
+// Capture queries for debugging
+$wpdb->show_errors();
+
+// Fetch asset details with legacy category information only
+// Note: The production database doesn't have primary_category_code columns
+$asset_query = $wpdb->prepare("
+    SELECT a.*, c.name as category_name
     FROM assets a
     LEFT JOIN categories c ON a.category_id = c.category_id
-    LEFT JOIN {$wpdb->prefix}pwr_asset_primary_categories pc ON a.primary_category_code = pc.category_code
-    LEFT JOIN {$wpdb->prefix}pwr_asset_secondary_categories sc ON a.secondary_category_code = sc.category_code
     WHERE a.asset_id = %d
-", $asset_id));
+", $asset_id);
+
+// Store the query for debugging
+$debug_asset_query = $asset_query;
+
+// Execute query
+$asset = $wpdb->get_row($asset_query);
 
 // Fetch current allocation if exists and status is not 'Unallocated'
 $current_allocation = null;
@@ -274,6 +278,18 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
                         <label class="small mb-1"><strong>Asset ID</strong></label>
                         <p class="mb-0"><?php echo esc_html($asset->asset_id); ?></p>
                     </div>
+                    <?php if (isset($asset->asset_type)): ?>
+                    <div class="mb-2">
+                        <label class="small mb-1"><strong>Asset Type</strong></label>
+                        <p class="mb-0">
+                            <?php 
+                            $type_label = $asset->asset_type == 'current' ? 'Current Asset' : 'Non-Current Asset';
+                            $badge_class = $asset->asset_type == 'current' ? 'bg-info' : 'bg-secondary';
+                            ?>
+                            <span class="badge <?php echo $badge_class; ?>"><?php echo esc_html($type_label); ?></span>
+                        </p>
+                    </div>
+                    <?php endif; ?>
                     <?php if ($asset->serial_number): ?>
                     <div class="mb-2">
                         <label class="small mb-1"><strong>Serial Number</strong></label>
@@ -383,6 +399,28 @@ $recent_transactions = $wpdb->get_results($wpdb->prepare("
 <?php else: ?>
     <div class="alert alert-danger" role="alert">
         Asset not found.
+        <?php if (current_user_can('administrator')): ?>
+            <hr>
+            <h5>Debug Information (Admins Only):</h5>
+            <pre><?php print_r([              
+                'asset_id' => $asset_id,
+                'wpdb_prefix' => $wpdb->prefix,
+                'last_error' => $wpdb->last_error,
+                'last_query' => $wpdb->last_query,
+                'asset_query' => $debug_asset_query,
+                'asset_query_error' => $wpdb->last_error
+            ]); ?></pre>
+            <p><strong>Asset Query:</strong> <?php echo $debug_asset_query; ?></p>
+            <p><strong>SQL Last Error:</strong> <?php echo $wpdb->last_error; ?></p>
+            
+            <h5>Troubleshooting Steps:</h5>
+            <ol>
+                <li>Check if asset ID <?php echo $asset_id; ?> exists in the assets table</li>
+                <li>Verify table names: assets, categories, pwr_asset_primary_categories, pwr_secondary_categories</li>
+                <li>Check database credentials in wp-config.php</li>
+                <li>Run this query directly in phpMyAdmin: <code>SELECT * FROM assets WHERE asset_id = <?php echo $asset_id; ?></code></li>
+            </ol>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
 
